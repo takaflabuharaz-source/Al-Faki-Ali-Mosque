@@ -176,13 +176,11 @@
   </div>
 
   <script>
-    // 🔗 رابط تطبيق الويب الخاص بك من Google Apps Script (استبدله برابطك الخاص)
     const API_URL = "https://script.google.com/macros/s/AKfycbzS7M8UiFAPXvXZ2WeN2bLYEFf0kWfmtAd2j1TLYYjP-_2rW12-f9eHs8Lrij6hld84/exec"; 
 
     let currentUser = null;
     let deferredPrompt = null;
 
-    // تسجيل تثبيت التطبيق PWA
     window.addEventListener('beforeinstallprompt', (e) => {
       e.preventDefault();
       deferredPrompt = e;
@@ -207,14 +205,29 @@
       }
     };
 
+    // دالة الاتصال المعدلة لحل مشكلة JSON والتحويل المباشر
     function callBackend(data, callback) {
+      const searchParams = new URLSearchParams();
+      searchParams.append('data', JSON.stringify(data));
+
       fetch(API_URL, {
         method: "POST",
-        body: JSON.stringify(data)
+        mode: "cors",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded"
+        },
+        body: searchParams
       })
       .then(res => res.json())
       .then(response => callback(response))
-      .catch(err => alert("حدث خطأ في الاتصال بالسيرفر: " + err));
+      .catch(err => {
+        // خطة بديلة في حال حظر المتصفح لـ POST المباشر
+        const params = new URLSearchParams({ data: JSON.stringify(data) }).toString();
+        fetch(API_URL + "?" + params)
+          .then(r => r.json())
+          .then(res => callback(res))
+          .catch(e => alert("حدث خطأ في الاتصال بالسيرفر: " + e));
+      });
     }
 
     function toggleAuth(type) {
@@ -386,14 +399,16 @@
         tbody.innerHTML = '';
         let sum = 0, count = 0;
 
-        data.forEach(item => {
-          if(item.status === 'تم الدفع') {
-            count++;
-            sum += parseFloat(item.amount);
-            const receiptBtn = item.receiptUrl ? `<a href="${item.receiptUrl}" target="_blank"><button style="padding: 2px 6px; font-size: 11px;">معاينة</button></a>` : '-';
-            tbody.innerHTML += `<tr><td>${count}</td><td>${item.name}</td><td>${item.month || '-'}</td><td>${item.amount} SDG</td><td>${receiptBtn}</td></tr>`;
-          }
-        });
+        if(Array.isArray(data)) {
+          data.forEach(item => {
+            if(item.status === 'تم الدفع') {
+              count++;
+              sum += parseFloat(item.amount);
+              const receiptBtn = item.receiptUrl ? `<a href="${item.receiptUrl}" target="_blank"><button style="padding: 2px 6px; font-size: 11px;">معاينة</button></a>` : '-';
+              tbody.innerHTML += `<tr><td>${count}</td><td>${item.name}</td><td>${item.month || '-'}</td><td>${item.amount} SDG</td><td>${receiptBtn}</td></tr>`;
+            }
+          });
+        }
         document.getElementById('paidSummary').innerText = `عدد المسددين: ${count} شخص | إجمالي التبرعات: ${sum} جنيه سوداني`;
       });
     }
@@ -408,21 +423,23 @@
         let paidSum = 0, waitSum = 0;
         let paidCount = 0, waitCount = 0;
 
-        data.forEach((item, index) => {
-          let paidCol = '-', waitCol = '-';
-          if(item.status === 'تم الدفع') {
-            paidCol = '<span class="badge-paid">✔ تم الدفع</span>';
-            paidSum += parseFloat(item.amount);
-            paidCount++;
-          } else {
-            waitCol = '<span class="badge-wait">⏳ في الانتظار</span>';
-            waitSum += parseFloat(item.amount);
-            waitCount++;
-          }
+        if(Array.isArray(data)) {
+          data.forEach((item, index) => {
+            let paidCol = '-', waitCol = '-';
+            if(item.status === 'تم الدفع') {
+              paidCol = '<span class="badge-paid">✔ تم الدفع</span>';
+              paidSum += parseFloat(item.amount);
+              paidCount++;
+            } else {
+              waitCol = '<span class="badge-wait">⏳ في الانتظار</span>';
+              waitSum += parseFloat(item.amount);
+              waitCount++;
+            }
 
-          const receiptBtn = item.receiptUrl ? `<a href="${item.receiptUrl}" target="_blank"><button style="padding: 2px 6px; font-size: 11px;">معاينة</button></a>` : '-';
-          tbody.innerHTML += `<tr><td>${index + 1}</td><td>${item.name}</td><td>${item.amount} SDG</td><td>${paidCol}</td><td>${waitCol}</td><td>${receiptBtn}</td></tr>`;
-        });
+            const receiptBtn = item.receiptUrl ? `<a href="${item.receiptUrl}" target="_blank"><button style="padding: 2px 6px; font-size: 11px;">معاينة</button></a>` : '-';
+            tbody.innerHTML += `<tr><td>${index + 1}</td><td>${item.name}</td><td>${item.amount} SDG</td><td>${paidCol}</td><td>${waitCol}</td><td>${receiptBtn}</td></tr>`;
+          });
+        }
 
         document.getElementById('allSummary').innerHTML = `
           المسددين: ${paidCount} (${paidSum} SDG) | في الانتظار: ${waitCount} (${waitSum} SDG)<br>
