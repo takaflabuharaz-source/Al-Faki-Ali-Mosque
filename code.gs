@@ -35,7 +35,7 @@ function processForm(data) {
 
   const action = data.action;
 
-  // 1. تسجيل حساب جديد
+  // 1. تسجيل حساب جديد وتدرج بياناته مباشرة في جدول التبرعات (الكشف العام) بحالة "في الانتظار"
   if (action === "register") {
     const usersData = usersSheet.getDataRange().getValues();
     for (let i = 1; i < usersData.length; i++) {
@@ -43,7 +43,20 @@ function processForm(data) {
         return { status: "error", message: "رقم الهاتف مسجل بالفعل!" };
       }
     }
+    // إدراج بالحسابات
     usersSheet.appendRow([data.name, data.phone, data.password, "مستخدم"]);
+
+    // إدراج مباشرة بالترتيب الصحيح لشيت التبرعات: [A:الاسم, B:الهاتف, C:الشهر, D:المبلغ, E:الإشعار, F:الحالة, G:التاريخ]
+    donationsSheet.appendRow([
+      data.name,
+      data.phone,
+      "",               // الشهر (فارغ لحين الدفع)
+      0,                // المبلغ (0 لحين الدفع)
+      "",               // الإشعار (فارغ)
+      "في الانتظار",    // الحالة
+      new Date()        // تاريخ التسجيل
+    ]);
+
     return { status: "success", message: "تم إنشاء الحساب بنجاح! يمكنك الآن تسجيل الدخول." };
   }
 
@@ -60,8 +73,8 @@ function processForm(data) {
         const donationsData = donationsSheet.getDataRange().getValues();
         for (let j = 1; j < donationsData.length; j++) {
           if (donationsData[j][1].toString() === data.phone.toString()) {
-            currentAmount = donationsData[j][2];
-            if (donationsData[j][3] === "تم الدفع") {
+            currentAmount = donationsData[j][3] || 10000; // العمود D (المبلغ)
+            if (donationsData[j][5] === "تم الدفع") {    // العمود F (الحالة)
               isPaid = true;
             }
           }
@@ -80,7 +93,7 @@ function processForm(data) {
     return { status: "error", message: "رقم الهاتف أو كلمة المرور غير صحيحة!" };
   }
 
-// 3. جلب قائمة التبرعات (معدل ليطابق شيت جوجل الخاص بك)
+  // 3. جلب قائمة التبرعات (مطابق لترتيب الشيت 7 أعمدة)
   if (action === "getDonations") {
     const donationsData = donationsSheet.getDataRange().getValues();
     let list = [];
@@ -89,15 +102,15 @@ function processForm(data) {
         name: donationsData[i][0],         // العمود A: الاسم
         phone: donationsData[i][1],        // العمود B: رقم الهاتف
         month: donationsData[i][2] || "",  // العمود C: الشهر
-        amount: donationsData[i][3],       // العمود D: المبلغ
+        amount: donationsData[i][3] || 0,  // العمود D: المبلغ
         receiptUrl: donationsData[i][4] || "", // العمود E: رابط الإشعار
-        status: donationsData[i][5]        // العمود F: الحالة
+        status: donationsData[i][5] || "في الانتظار" // العمود F: الحالة
       });
     }
     return list;
   }
 
-  // 4. إضافة وتحديث تبرع (معدل ليطابق شيت جوجل الخاص بك)
+  // 4. إضافة وتحديث تبرع
   if (action === "addDonations" || action === "addDonation") {
     let receiptUrl = "";
     if (data.receiptData) {
@@ -124,7 +137,6 @@ function processForm(data) {
     }
 
     if (!updated) {
-      // إدراج صف جديد بالترتيب الصحيح [A, B, C, D, E, F, G]
       donationsSheet.appendRow([
         data.userName, 
         data.phone, 
@@ -158,8 +170,8 @@ function processForm(data) {
   }
 
   // 6. توليد كشف PDF
-  if (action === "generatePDF") {
-    const pdfUrl = generatePDFUrl(ss, data.pdfType);
+  if (action === "generatePDF" || action === "generateExpensesPDF") {
+    const pdfUrl = generatePDFUrl(ss, data.pdfType || "all");
     return { status: "success", pdfDownloadUrl: pdfUrl };
   }
 
