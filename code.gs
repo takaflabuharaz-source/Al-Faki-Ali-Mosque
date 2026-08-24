@@ -80,24 +80,24 @@ function processForm(data) {
     return { status: "error", message: "رقم الهاتف أو كلمة المرور غير صحيحة!" };
   }
 
-  // 3. جلب قائمة التبرعات
+// 3. جلب قائمة التبرعات (معدل ليطابق شيت جوجل الخاص بك)
   if (action === "getDonations") {
     const donationsData = donationsSheet.getDataRange().getValues();
     let list = [];
     for (let i = 1; i < donationsData.length; i++) {
       list.push({
-        name: donationsData[i][0],
-        phone: donationsData[i][1],
-        amount: donationsData[i][2],
-        status: donationsData[i][3],
-        receiptUrl: donationsData[i][4] || "",
-        month: donationsData[i][5] || ""
+        name: donationsData[i][0],         // العمود A: الاسم
+        phone: donationsData[i][1],        // العمود B: رقم الهاتف
+        month: donationsData[i][2] || "",  // العمود C: الشهر
+        amount: donationsData[i][3],       // العمود D: المبلغ
+        receiptUrl: donationsData[i][4] || "", // العمود E: رابط الإشعار
+        status: donationsData[i][5]        // العمود F: الحالة
       });
     }
     return list;
   }
 
-  // 4. إضافة وتحديث تبرع
+  // 4. إضافة وتحديث تبرع (معدل ليطابق شيت جوجل الخاص بك)
   if (action === "addDonations" || action === "addDonation") {
     let receiptUrl = "";
     if (data.receiptData) {
@@ -113,17 +113,27 @@ function processForm(data) {
 
     for (let i = 1; i < donationsData.length; i++) {
       if (donationsData[i][1].toString() === data.phone.toString()) {
-        donationsSheet.getRange(i + 1, 3).setValue(data.amount);
-        donationsSheet.getRange(i + 1, 4).setValue("تم الدفع");
-        if (receiptUrl) donationsSheet.getRange(i + 1, 5).setValue(receiptUrl);
-        if (data.month) donationsSheet.getRange(i + 1, 6).setValue(data.month);
+        donationsSheet.getRange(i + 1, 3).setValue(data.month || "أغسطس"); // العمود C: الشهر
+        donationsSheet.getRange(i + 1, 4).setValue(data.amount);            // العمود D: المبلغ
+        if (receiptUrl) donationsSheet.getRange(i + 1, 5).setValue(receiptUrl); // العمود E: رابط الإشعار
+        donationsSheet.getRange(i + 1, 6).setValue("تم الدفع");             // العمود F: الحالة
+        donationsSheet.getRange(i + 1, 7).setValue(new Date());              // العمود G: التاريخ
         updated = true;
         break;
       }
     }
 
     if (!updated) {
-      donationsSheet.appendRow([data.userName, data.phone, data.amount, "تم الدفع", receiptUrl, data.month || ""]);
+      // إدراج صف جديد بالترتيب الصحيح [A, B, C, D, E, F, G]
+      donationsSheet.appendRow([
+        data.userName, 
+        data.phone, 
+        data.month || "أغسطس", 
+        data.amount, 
+        receiptUrl, 
+        "تم الدفع", 
+        new Date()
+      ]);
     }
 
     const pdfUrl = generatePDFUrl(ss, "paid");
@@ -131,7 +141,7 @@ function processForm(data) {
       status: "success",
       message: "تم تسجيل التبرع بنجاح",
       pdfDownloadUrl: pdfUrl,
-      targetPhone: "249912345678" // اكتب رقم الآدمن بدون + أو 00
+      targetPhone: "249912345678"
     };
   }
 
