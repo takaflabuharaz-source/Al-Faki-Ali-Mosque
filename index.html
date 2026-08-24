@@ -123,25 +123,29 @@
       <button id="sendDonationBtn" onclick="sendDonation()" style="background-color: #27ae60;">تأكيد الدفع وإرسال التقرير للواتساب 💬</button>
     </div>
 
-    <div id="adminArea" class="hidden" style="background: #f4ecf7; padding: 12px; border-radius: 8px; margin: 15px 0;">
-      <h4 style="color:#8e44ad;">💼 لوحة تسجيل وإدارة المصروفات (للإدارة)</h4>
-      
-      <input type="text" id="expenseTitle" placeholder="بيان المصروف (مثلاً: صيانات، كهرباء...)">
-      <input type="number" id="expenseAmount" placeholder="المبلغ بالجنيه السوداني (SDG)">
-      <button id="addExpenseBtn" onclick="addExpense()" class="btn-admin">تسجيل وإرسال تقرير المصروفات للواتساب 📄💬</button>
-      
-      <hr style="border: 0.5px solid #dcdde1; margin: 15px 0;">
-      
-      <h5 style="margin: 5px 0; color:#2c3e50; text-align:center;">📅 طباعة المصروفات خلال فترة زمنية</h5>
-      <div class="date-filter-box">
-        <label class="note">من تاريخ:</label>
-        <input type="date" id="startDate">
-        <label class="note">إلى تاريخ:</label>
-        <input type="date" id="endDate">
-        <button onclick="downloadExpensesPDF()" class="btn-download" style="margin-top:8px;">تنزيل PDF المصروفات للفترة المحسوبة 📄</button>
-      </div>
-    </div>
+   function showApp() {
+  document.getElementById('userDisplayName').innerText = currentUser.userName;
+  document.getElementById('authSection').classList.add('hidden');
+  document.getElementById('appSection').classList.remove('hidden');
+  
+  if(currentUser.currentAmount) {
+    document.getElementById('donationAmount').value = currentUser.currentAmount;
+  }
 
+  // إظهار رسالة الشكر للجميع مباشرة عند الدخول
+  document.getElementById('thankYouMessage').classList.remove('hidden');
+
+  // إظهار قسم المصروفات للجميع
+  document.getElementById('adminArea').classList.remove('hidden');
+
+  const today = new Date().getDate();
+  if(today >= 30) {
+    document.getElementById('monthClosedNotice').classList.remove('hidden');
+    document.getElementById('donationFormArea').classList.add('hidden');
+  }
+
+  showPaidList();
+}
     <div style="margin-top: 15px;">
       <button class="btn-nav" onclick="showPaidList()" style="background:#2980b9;">المسددين فقط 🟢</button>
       <button class="btn-nav" onclick="showAllList()" style="background:#34495e;">الكشف الشامل 📋</button>
