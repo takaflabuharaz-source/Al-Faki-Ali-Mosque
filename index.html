@@ -21,6 +21,7 @@
     input, select, button { width: 100%; padding: 12px; margin: 6px 0; border-radius: 8px; border: 1px solid #ccc; box-sizing: border-box; font-size: 14px; }
     button { background-color: #1e5631; color: white; border: none; font-weight: bold; cursor: pointer; transition: 0.3s; }
     button:active { opacity: 0.85; }
+    button:disabled { background-color: #bdc3c7 !important; cursor: not-allowed; opacity: 0.7; }
     .btn-admin { background-color: #8e44ad !important; }
     .btn-download { background-color: #c0392b !important; }
     .btn-install { background-color: #d35400 !important; color: #fff; margin-top: 10px; font-size: 15px; }
@@ -68,7 +69,7 @@
       <h3>تسجيل الدخول</h3>
       <input type="tel" id="loginPhone" placeholder="رقم الهاتف (بدون 0 مثلاً: 912345678)">
       <input type="password" id="loginPassword" placeholder="كلمة المرور">
-      <button onclick="login()">دخول</button>
+      <button id="btnLoginBtn" onclick="login()">دخول</button>
       <p style="text-align:center; font-size: 14px;">ليس لديك حساب؟ <a href="#" onclick="toggleAuth('register')">إنشاء حساب جديد</a></p>
     </div>
 
@@ -77,7 +78,7 @@
       <input type="text" id="regName" placeholder="الاسم الكامل">
       <input type="tel" id="regPhone" placeholder="رقم الهاتف (بدون 0 مثلاً: 912345678)">
       <input type="password" id="regPassword" placeholder="كلمة المرور">
-      <button onclick="register()">تسجيل الحساب</button>
+      <button id="btnRegBtn" onclick="register()">تسجيل الحساب</button>
       <p style="text-align:center; font-size: 14px;">لديك حساب بالفعل؟ <a href="#" onclick="toggleAuth('login')">تسجيل الدخول</a></p>
     </div>
 
@@ -119,7 +120,7 @@
       <label class="note">إرفاق صورة الإشعار (لتغيير الحالة إلى تم الدفع):</label>
       <input type="file" id="receiptFile" accept="image/*">
       
-      <button onclick="sendDonation()" style="background-color: #27ae60;">تأكيد الدفع وإرسال التقرير للواتساب 💬</button>
+      <button id="sendDonationBtn" onclick="sendDonation()" style="background-color: #27ae60;">تأكيد الدفع وإرسال التقرير للواتساب 💬</button>
     </div>
 
     <div id="adminArea" class="hidden" style="background: #f4ecf7; padding: 12px; border-radius: 8px; margin: 15px 0;">
@@ -127,7 +128,7 @@
       
       <input type="text" id="expenseTitle" placeholder="بيان المصروف (مثلاً: صيانات، كهرباء...)">
       <input type="number" id="expenseAmount" placeholder="المبلغ بالجنيه السوداني (SDG)">
-      <button onclick="addExpense()" class="btn-admin">تسجيل وإرسال تقرير المصروفات للواتساب 📄💬</button>
+      <button id="addExpenseBtn" onclick="addExpense()" class="btn-admin">تسجيل وإرسال تقرير المصروفات للواتساب 📄💬</button>
       
       <hr style="border: 0.5px solid #dcdde1; margin: 15px 0;">
       
@@ -205,7 +206,6 @@
       }
     };
 
-    // دالة الاتصال المحدثة والآمنة لتفادي CORS و Failed to fetch
     function callBackend(data, callback) {
       const encodedData = encodeURIComponent(JSON.stringify(data));
       
@@ -216,13 +216,15 @@
       .then(res => res.json())
       .then(response => callback(response))
       .catch(err => {
-        // تجربة الإرسال عبر النموذج في حال حظر طلبات GET المباشرة
         const formData = new FormData();
         formData.append('data', JSON.stringify(data));
         fetch(API_URL, { method: "POST", body: formData })
           .then(r => r.json())
           .then(res => callback(res))
-          .catch(e => alert("حدث خطأ في الاتصال بالسيرفر! يرجى التأكد من ضبط صلاحيات النشر (Anyone) في Google Script."));
+          .catch(e => {
+            alert("حدث خطأ في الاتصال بالسيرفر! يرجى التأكد من ضبط صلاحيات النشر (Anyone) في Google Script.");
+            if(callback) callback({ status: "error" });
+          });
       });
     }
 
@@ -237,25 +239,37 @@
     }
 
     function register() {
+      const btn = document.getElementById('btnRegBtn');
       const name = document.getElementById('regName').value;
       const phone = document.getElementById('regPhone').value;
       const password = document.getElementById('regPassword').value;
 
       if(!name || !phone || !password) return alert("يرجى ملء جميع الحقول");
 
+      btn.disabled = true;
+      btn.innerText = "جاري إنشاء الحساب...";
+
       callBackend({ action: 'register', name, phone, password }, res => {
+        btn.disabled = false;
+        btn.innerText = "تسجيل الحساب";
         alert(res.message);
         if(res.status === 'success') toggleAuth('login');
       });
     }
 
     function login() {
+      const btn = document.getElementById('btnLoginBtn');
       const phone = document.getElementById('loginPhone').value;
       const password = document.getElementById('loginPassword').value;
 
       if(!phone || !password) return alert("يرجى إدخال رقم الهاتف وكلمة المرور");
 
+      btn.disabled = true;
+      btn.innerText = "جاري الدخول...";
+
       callBackend({ action: 'login', phone, password }, res => {
+        btn.disabled = false;
+        btn.innerText = "دخول";
         if(res.status === 'success') {
           currentUser = res;
           localStorage.setItem("msg_user", JSON.stringify(res));
@@ -298,6 +312,7 @@
     }
 
     function sendDonation() {
+      const btn = document.getElementById('sendDonationBtn');
       const amount = document.getElementById('donationAmount').value;
       const month = document.getElementById('donationMonth').value;
       const fileInput = document.getElementById('receiptFile');
@@ -305,15 +320,17 @@
       if(!amount) return alert("يرجى إدخال المبلغ");
       if(fileInput.files.length === 0) return alert("يرجى إرفاق صورة الإشعار ليتم تغيير الحالة إلى (تم الدفع ✔)");
 
+      btn.disabled = true;
+      btn.innerText = "جاري إرسال التبرع...";
+
       const reader = new FileReader();
       reader.onload = function(e) {
-        submitDonationData(amount, month, e.target.result);
+        submitDonationData(amount, month, e.target.result, btn);
       };
       reader.readAsDataURL(fileInput.files[0]);
     }
 
-    function submitDonationData(amount, month, receiptData) {
-      alert("جاري التحديث، تنزيل الـ PDF، والفتح في الواتساب...");
+    function submitDonationData(amount, month, receiptData, btn) {
       callBackend({
         action: 'addDonation',
         userName: currentUser.userName,
@@ -322,6 +339,9 @@
         month: month,
         receiptData: receiptData
       }, res => {
+        btn.disabled = false;
+        btn.innerText = "تأكيد الدفع وإرسال التقرير للواتساب 💬";
+
         if(res.status === 'success') {
           document.getElementById('receiptFile').value = '';
           document.getElementById('thankYouMessage').classList.remove('hidden');
@@ -348,12 +368,19 @@
     }
 
     function addExpense() {
+      const btn = document.getElementById('addExpenseBtn');
       const title = document.getElementById('expenseTitle').value;
       const amount = document.getElementById('expenseAmount').value;
+
       if(!title || !amount) return alert("يرجى إدخال بيان وقيمة المصروف");
 
-      alert("جاري تسجيل المصروف وإعداد التقرير للواتساب...");
+      btn.disabled = true;
+      btn.innerText = "جاري إرسال المصروف...";
+
       callBackend({ action: 'addExpense', title, amount, phone: currentUser.phone }, res => {
+        btn.disabled = false;
+        btn.innerText = "تسجيل وإرسال تقرير المصروفات للواتساب 📄💬";
+
         if(res.status === 'success') {
           document.getElementById('expenseTitle').value = '';
           document.getElementById('expenseAmount').value = '';
@@ -401,7 +428,7 @@
           data.forEach(item => {
             if(item.status === 'تم الدفع') {
               count++;
-              sum += parseFloat(item.amount);
+              sum += parseFloat(item.amount || 0);
               const receiptBtn = item.receiptUrl ? `<a href="${item.receiptUrl}" target="_blank"><button style="padding: 2px 6px; font-size: 11px;">معاينة</button></a>` : '-';
               tbody.innerHTML += `<tr><td>${count}</td><td>${item.name}</td><td>${item.month || '-'}</td><td>${item.amount} SDG</td><td>${receiptBtn}</td></tr>`;
             }
@@ -426,11 +453,11 @@
             let paidCol = '-', waitCol = '-';
             if(item.status === 'تم الدفع') {
               paidCol = '<span class="badge-paid">✔ تم الدفع</span>';
-              paidSum += parseFloat(item.amount);
+              paidSum += parseFloat(item.amount || 0);
               paidCount++;
             } else {
               waitCol = '<span class="badge-wait">⏳ في الانتظار</span>';
-              waitSum += parseFloat(item.amount);
+              waitSum += parseFloat(item.amount || 0);
               waitCount++;
             }
 
