@@ -205,28 +205,24 @@
       }
     };
 
-    // دالة الاتصال المعدلة لحل مشكلة JSON والتحويل المباشر
+    // دالة الاتصال المحدثة والآمنة لتفادي CORS و Failed to fetch
     function callBackend(data, callback) {
-      const searchParams = new URLSearchParams();
-      searchParams.append('data', JSON.stringify(data));
-
-      fetch(API_URL, {
-        method: "POST",
-        mode: "cors",
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded"
-        },
-        body: searchParams
+      const encodedData = encodeURIComponent(JSON.stringify(data));
+      
+      fetch(`${API_URL}?data=${encodedData}`, {
+        method: "GET",
+        mode: "cors"
       })
       .then(res => res.json())
       .then(response => callback(response))
       .catch(err => {
-        // خطة بديلة في حال حظر المتصفح لـ POST المباشر
-        const params = new URLSearchParams({ data: JSON.stringify(data) }).toString();
-        fetch(API_URL + "?" + params)
+        // تجربة الإرسال عبر النموذج في حال حظر طلبات GET المباشرة
+        const formData = new FormData();
+        formData.append('data', JSON.stringify(data));
+        fetch(API_URL, { method: "POST", body: formData })
           .then(r => r.json())
           .then(res => callback(res))
-          .catch(e => alert("حدث خطأ في الاتصال بالسيرفر: " + e));
+          .catch(e => alert("حدث خطأ في الاتصال بالسيرفر! يرجى التأكد من ضبط صلاحيات النشر (Anyone) في Google Script."));
       });
     }
 
@@ -256,6 +252,8 @@
     function login() {
       const phone = document.getElementById('loginPhone').value;
       const password = document.getElementById('loginPassword').value;
+
+      if(!phone || !password) return alert("يرجى إدخال رقم الهاتف وكلمة المرور");
 
       callBackend({ action: 'login', phone, password }, res => {
         if(res.status === 'success') {
