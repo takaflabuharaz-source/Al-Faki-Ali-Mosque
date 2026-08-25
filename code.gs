@@ -24,29 +24,26 @@ function handleRequest(e) {
   if (!data || !data.action) {
     return ContentService.createTextOutput(JSON.stringify({
       status: "success",
-      message: "API أسرة مجمع الفكي علي الشيخ حماد يعمل بنجاح!"
+      message: "API أسرة مجمع الفكي يعمل بنجاح!"
     })).setMimeType(ContentService.MimeType.JSON);
   }
 
   const result = processForm(data);
-  
   return ContentService.createTextOutput(JSON.stringify(result))
     .setMimeType(ContentService.MimeType.JSON);
 }
 
-// دالة لتحديد الشهر الحالي والتعامل مع الإغلاق المباشر بنهاية يوم 30 وبداية يوم 1
+// تحديد الشهر الحالي والتعامل مع التحول التلقائي للشهر الجديد
 function getCurrentDonationMonth() {
   const now = new Date();
   const day = now.getDate();
-  let monthIndex = now.getMonth(); // 0-based index
+  let monthIndex = now.getMonth();
   
-  // الأشهُر العربية
   const months = [
     "يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو",
     "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"
   ];
 
-  // إذا كان اليوم بعد يوم 30 (أو يوم 31)، يتحول التسجيل تلقائياً إلى الشهر الجديد
   if (day > 30) {
     monthIndex = (monthIndex + 1) % 12;
   }
@@ -63,27 +60,29 @@ function processForm(data) {
   const action = data.action;
   const currentMonth = getCurrentDonationMonth();
 
-  // 1. تسجيل حساب جديد والدخول المباشر
+  // فحص وإعادة ضبط حالة الشهر الجديد تلقائياً
+  checkAndResetMonthlyStatus(donationsSheet, currentMonth);
+
+  // 1. تسجيل حساب جديد
   if (action === "register") {
     const usersData = usersSheet.getDataRange().getValues();
+    const cleanPhone = data.phone.toString().replace(/^0+/, '').trim();
     
-    // التحقق من عدم تكرار رقم الهاتف أو الاسم
     for (let i = 1; i < usersData.length; i++) {
-      if (usersData[i][1].toString().trim() === data.phone.toString().trim()) {
+      if (usersData[i][1].toString().trim() === cleanPhone) {
         return { status: "error", message: "رقم الهاتف مسجل بالفعل!" };
       }
       if (usersData[i][0].toString().trim() === data.name.toString().trim()) {
-        return { status: "error", message: "الاسم مسجل من قبل، يرجى اختيار اسم آخر!" };
+        return { status: "error", message: "الاسم مسجل من قبل، يرجى استخدام اسم مختلف!" };
       }
     }
     
-    // إضافة المستخدم في شيت المستخدمين
-    usersSheet.appendRow([data.name, data.phone, data.password, "مستخدم"]);
+    usersSheet.appendRow([data.name, cleanPhone, data.password, "مستخدم"]);
 
-    // إضافة المستخدم تلقائياً للكشف العام بمبلغ 10000 وحالة قيد الانتظار
+    // إضافة تلقائية لكشف التبرعات
     donationsSheet.appendRow([
       data.name,
-      data.phone,
+      cleanPhone,
       currentMonth, 
       10000, 
       "", 
@@ -93,10 +92,10 @@ function processForm(data) {
 
     return { 
       status: "success", 
-      message: "تم إنشاء الحساب بنجاح وإضافتك للكشف العام!",
+      message: "تم إنشاء الحساب وإضافتك للكشف العام بنجاح!",
       userData: {
         userName: data.name,
-        phone: data.phone,
+        phone: cleanPhone,
         isAdmin: false,
         isPaid: false,
         currentAmount: 10000,
@@ -108,8 +107,10 @@ function processForm(data) {
   // 2. تسجيل الدخول
   if (action === "login") {
     const usersData = usersSheet.getDataRange().getValues();
+    const cleanPhone = data.phone.toString().replace(/^0+/, '').trim();
+
     for (let i = 1; i < usersData.length; i++) {
-      if (usersData[i][1].toString().trim() === data.phone.toString().trim() && usersData[i][2].toString().trim() === data.password.toString().trim()) {
+      if (usersData[i][1].toString().trim() === cleanPhone && usersData[i][2].toString().trim() === data.password.toString().trim()) {
         const userName = usersData[i][0];
         const isAdmin = usersData[i][3] === "آدمن" || usersData[i][3] === "ادمن" || usersData[i][3] === "Admin";
         
@@ -117,7 +118,7 @@ function processForm(data) {
         let currentAmount = 10000;
         const donationsData = donationsSheet.getDataRange().getValues();
         for (let j = 1; j < donationsData.length; j++) {
-          if (donationsData[j][1].toString().trim() === data.phone.toString().trim()) {
+          if (donationsData[j][1].toString().trim() === cleanPhone) {
             currentAmount = donationsData[j][3] || 10000;
             if (donationsData[j][5] === "تم الدفع") {
               isPaid = true;
@@ -128,7 +129,7 @@ function processForm(data) {
         return {
           status: "success",
           userName: userName,
-          phone: data.phone,
+          phone: cleanPhone,
           isAdmin: isAdmin,
           isPaid: isPaid,
           currentAmount: currentAmount,
@@ -139,45 +140,50 @@ function processForm(data) {
     return { status: "error", message: "رقم الهاتف أو كلمة المرور غير صحيحة!" };
   }
 
-  // 3. جلب قائمة التبرعات
+  // 3. جلب التبرعات والإحصائيات
   if (action === "getDonations") {
     const donationsData = donationsSheet.getDataRange().getValues();
     let list = [];
+    let paidCount = 0;
+    let unpaidCount = 0;
+    let totalPaidAmount = 0;
+
     for (let i = 1; i < donationsData.length; i++) {
+      const amount = Number(donationsData[i][3]) || 10000;
+      const status = donationsData[i][5] || "في الانتظار";
+
+      if (status === "تم الدفع") {
+        paidCount++;
+        totalPaidAmount += amount;
+      } else {
+        unpaidCount++;
+      }
+
       list.push({
         rowIndex: i + 1,
         name: donationsData[i][0],
         phone: donationsData[i][1],
         month: donationsData[i][2] || currentMonth,
-        amount: donationsData[i][3] || 10000,
+        amount: amount,
         receiptUrl: donationsData[i][4] || "",
-        status: donationsData[i][5] || "في الانتظار"
+        status: status
       });
     }
-    return list;
+
+    return {
+      donations: list,
+      stats: {
+        paidCount: paidCount,
+        unpaidCount: unpaidCount,
+        totalPaidAmount: totalPaidAmount
+      }
+    };
   }
 
-  // 4. جلب قائمة المصروفات
-  if (action === "getExpenses") {
-    const expensesData = expensesSheet.getDataRange().getValues();
-    let list = [];
-    for (let i = 1; i < expensesData.length; i++) {
-      list.push({
-        rowIndex: i + 1,
-        date: expensesData[i][0] ? Utilities.formatDate(new Date(expensesData[i][0]), Session.getScriptTimeZone(), "yyyy-MM-dd") : "",
-        title: expensesData[i][1] || "",
-        amount: expensesData[i][2] || 0,
-        phone: expensesData[i][3] || ""
-      });
-    }
-    return list;
-  }
-
-  // 5. إضافة وتحديث تبرع (رفع إشعار التبرع)
-  if (action === "addDonation" || action === "addDonations") {
-    // التأكد التام من إرفاق الإشعار
+  // 4. رفع وتحديث الإشعار
+  if (action === "addDonation") {
     if (!data.receiptData) {
-      return { status: "error", message: "إرفاق إشعار التبرع إجباري لإكمال العملية!" };
+      return { status: "error", message: "إرفاق إشعار التبرع إجباري!" };
     }
 
     let receiptUrl = "";
@@ -189,11 +195,12 @@ function processForm(data) {
       receiptUrl = file.getUrl();
     }
 
+    const cleanPhone = data.phone.toString().replace(/^0+/, '').trim();
     const donationsData = donationsSheet.getDataRange().getValues();
     let updated = false;
 
     for (let i = 1; i < donationsData.length; i++) {
-      if (donationsData[i][1].toString().trim() === data.phone.toString().trim()) {
+      if (donationsData[i][1].toString().trim() === cleanPhone) {
         donationsSheet.getRange(i + 1, 3).setValue(data.month || currentMonth);
         donationsSheet.getRange(i + 1, 4).setValue(data.amount || 10000);
         if (receiptUrl) donationsSheet.getRange(i + 1, 5).setValue(receiptUrl);
@@ -207,7 +214,7 @@ function processForm(data) {
     if (!updated) {
       donationsSheet.appendRow([
         data.userName, 
-        data.phone, 
+        cleanPhone, 
         data.month || currentMonth, 
         data.amount || 10000, 
         receiptUrl, 
@@ -216,57 +223,71 @@ function processForm(data) {
       ]);
     }
 
-    const pdfUrl = generatePDFUrl(ss, "paid");
-    return {
-      status: "success",
-      message: "تم تسجيل التبرع ورفع الإشعار بنجاح",
-      pdfDownloadUrl: pdfUrl,
-      targetPhone: data.phone
-    };
+    return { status: "success", message: "تم تسجيل وتحديث التبرع بنجاح!" };
   }
 
-  // 6. تعديل سجل بواسطة الإدارة
+  // 5. جلب المصروفات
+  if (action === "getExpenses") {
+    const expensesData = expensesSheet.getDataRange().getValues();
+    let list = [];
+    for (let i = 1; i < expensesData.length; i++) {
+      list.push({
+        rowIndex: i + 1,
+        date: expensesData[i][0] ? Utilities.formatDate(new Date(expensesData[i][0]), Session.getScriptTimeZone(), "yyyy-MM-dd") : "",
+        title: expensesData[i][1] || "",
+        amount: expensesData[i][2] || 0
+      });
+    }
+    return list;
+  }
+
+  // 6. إضافة مصروف
+  if (action === "addExpense") {
+    expensesSheet.appendRow([new Date(), data.title, data.amount, data.phone]);
+    return { status: "success", message: "تم تسجيل المصروف بنجاح!" };
+  }
+
+  // 7. تعديل سجل
   if (action === "editDonation") {
     const rowIndex = parseInt(data.rowIndex);
     if (rowIndex > 1) {
-      if (data.name) donationsSheet.getRange(rowIndex, 1).setValue(data.name);
       if (data.amount !== undefined) donationsSheet.getRange(rowIndex, 4).setValue(data.amount);
       if (data.status) donationsSheet.getRange(rowIndex, 6).setValue(data.status);
-      return { status: "success", message: "تم تعديل السجل بنجاح" };
+      return { status: "success", message: "تم تعديل السجل بنجاح!" };
     }
-    return { status: "error", message: "رقم الصف غير صحيح" };
   }
 
-  // 7. حذف سجل بواسطة الإدارة
+  // 8. حذف سجل
   if (action === "deleteDonation") {
     const rowIndex = parseInt(data.rowIndex);
     if (rowIndex > 1) {
       donationsSheet.deleteRow(rowIndex);
-      return { status: "success", message: "تم حذف السجل بنجاح" };
+      return { status: "success", message: "تم حذف السجل بنجاح!" };
     }
-    return { status: "error", message: "رقم الصف غير صحيح" };
   }
 
-  // 8. إضافة مصروف (للإدارة فقط)
-  if (action === "addExpense") {
-    expensesSheet.appendRow([new Date(), data.title, data.amount, data.phone]);
-    const pdfUrl = generatePDFUrl(ss, "expenses");
-    return {
-      status: "success",
-      message: "تم تسجيل المصروف",
-      pdfDownloadUrl: pdfUrl,
-      targetPhone: data.phone
-    };
+  // 9. إنشاء رابط PDF
+  if (action === "generatePDF") {
+    const url = generatePDFUrl(ss, data.pdfType || "donations");
+    return { status: "success", pdfDownloadUrl: url };
   }
 
-  // 9. توليد كشف PDF
-  if (action === "generatePDF" || action === "generateExpensesPDF") {
-    const type = action === "generateExpensesPDF" ? "expenses" : (data.pdfType || "all");
-    const pdfUrl = generatePDFUrl(ss, type);
-    return { status: "success", pdfDownloadUrl: pdfUrl };
-  }
+  return { status: "error", message: "طلب غير معروف!" };
+}
 
-  return { status: "error", message: "طلب غير معروف" };
+// إعادة إسناد جميع الحالات لـ "في الانتظار" عند التحول لشهر جديد
+function checkAndResetMonthlyStatus(donationsSheet, currentMonth) {
+  const data = donationsSheet.getDataRange().getValues();
+  if (data.length <= 1) return;
+
+  const firstRecordMonth = data[1][2];
+  if (firstRecordMonth && firstRecordMonth !== currentMonth) {
+    for (let i = 1; i < data.length; i++) {
+      donationsSheet.getRange(i + 1, 3).setValue(currentMonth);
+      donationsSheet.getRange(i + 1, 5).setValue(""); // مسح رابط الإشعار السابق
+      donationsSheet.getRange(i + 1, 6).setValue("في الانتظار");
+    }
+  }
 }
 
 function generatePDFUrl(ss, type) {
@@ -283,7 +304,6 @@ function generatePDFUrl(ss, type) {
     if (sheet) sheetId = "&gid=" + sheet.getSheetId();
   }
   
-  const url = ss.getUrl().replace(/edit$/, '') + 'export?exportFormat=pdf&format=pdf' +
+  return ss.getUrl().replace(/edit$/, '') + 'export?exportFormat=pdf&format=pdf' +
     '&size=letter&portrait=true&fitw=true&gridlines=true&printtitle=false&sheetnames=false&fzr=false' + sheetId;
-  return url;
 }
