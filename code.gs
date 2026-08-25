@@ -42,7 +42,7 @@ function processForm(data) {
 
   const action = data.action;
 
-  // 1. تسجيل حساب جديد
+  // 1. تسجيل حساب جديد والدخول المباشر
   if (action === "register") {
     const usersData = usersSheet.getDataRange().getValues();
     for (let i = 1; i < usersData.length; i++) {
@@ -50,6 +50,7 @@ function processForm(data) {
         return { status: "error", message: "رقم الهاتف مسجل بالفعل!" };
       }
     }
+    
     usersSheet.appendRow([data.name, data.phone, data.password, "مستخدم"]);
 
     donationsSheet.appendRow([
@@ -62,7 +63,17 @@ function processForm(data) {
       new Date()
     ]);
 
-    return { status: "success", message: "تم إنشاء الحساب بنجاح! يمكنك الآن تسجيل الدخول." };
+    return { 
+      status: "success", 
+      message: "تم إنشاء الحساب بنجاح!",
+      userData: {
+        userName: data.name,
+        phone: data.phone,
+        isAdmin: false,
+        isPaid: false,
+        currentAmount: 10000
+      }
+    };
   }
 
   // 2. تسجيل الدخول
