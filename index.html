@@ -91,7 +91,7 @@
       <div id="donationFormArea" class="card" style="background-color: #fafafa; border: 1px dashed #1e5631; margin-top:10px;">
         <h4>تسجيل / رفع إشعار التبرع</h4>
         
-        <label for="donAmount" style="font-weight: bold; display: block; margin-bottom: 4px;">مبلغ التبرع (ريال):</label>
+        <label for="donAmount" style="font-weight: bold; display: block; margin-bottom: 4px;">مبلغ التبرع (SDG):</label>
         <input type="number" id="donAmount" value="10000" min="1" placeholder="أدخل مبلغ التبرع">
 
         <label for="donReceipt" style="font-weight: bold; display: block; margin-top: 8px; margin-bottom: 4px;">إشعار التحويل:</label>
@@ -265,7 +265,7 @@
         document.getElementById('statsBox').innerHTML = `
           📌 <b>إحصائيات الشهر الحالي:</b><br>
           • عدد المسددين: <b>${stats.paidCount} شخص</b><br>
-          • إجمالي المبلغ المالي المحصل: <b>${stats.totalPaidAmount.toLocaleString()} ريال</b><br>
+          • إجمالي المبلغ المالي المحصل: <b>${stats.totalPaidAmount.toLocaleString()} SDG</b><br>
           • عدد الذين لم يدفعوا بعد: <b>${stats.unpaidCount} شخص</b>
         `;
 
