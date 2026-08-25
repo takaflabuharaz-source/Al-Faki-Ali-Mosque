@@ -99,7 +99,7 @@
       <div id="loginForm">
         <input type="tel" id="loginPhone" placeholder="رقم الهاتف">
         <input type="password" id="loginPassword" placeholder="كلمة المرور">
-        <button onclick="login()">تسجيل الدخول</button>
+        <button id="loginBtn" onclick="login()">تسجيل الدخول</button>
         <p style="text-align: center;"><a href="#" onclick="toggleAuth('register')">إنشاء حساب جديد</a></p>
       </div>
 
@@ -107,7 +107,7 @@
         <input type="text" id="regName" placeholder="الاسم الرباعي">
         <input type="tel" id="regPhone" placeholder="رقم الهاتف">
         <input type="password" id="regPassword" placeholder="كلمة المرور">
-        <button onclick="register()">تسجيل الحساب</button>
+        <button id="regBtn" onclick="register()">تسجيل الحساب</button>
         <p style="text-align: center;"><a href="#" onclick="toggleAuth('login')">لديك حساب بالفعل؟ سجل دخول</a></p>
       </div>
     </div>
@@ -230,11 +230,36 @@
       }
     }
 
+    function enterSystem(userData) {
+      currentUser = userData;
+      document.getElementById('authSection').classList.add('hidden');
+      document.getElementById('mainSection').classList.remove('hidden');
+      document.getElementById('welcomeMsg').innerText = "مرحباً بك: " + userData.userName;
+      
+      if(userData.isAdmin) {
+        document.getElementById('adminArea').classList.remove('hidden');
+        document.getElementById('addExpenseArea').classList.remove('hidden');
+        document.querySelectorAll('.admin-col').forEach(el => el.classList.remove('hidden'));
+      }
+
+      if(userData.isPaid) {
+        document.getElementById('userStatusArea').classList.remove('hidden');
+      }
+
+      // تحميل البيانات بسرعة وفوراً عند الدخول
+      loadDonations();
+      loadExpenses();
+    }
+
     function login() {
       const phone = document.getElementById('loginPhone').value;
       const password = document.getElementById('loginPassword').value;
+      const loginBtn = document.getElementById('loginBtn');
 
       if(!phone || !password) { alert('الرجاء كتابة رقم الهاتف وكلمة المرور'); return; }
+
+      loginBtn.disabled = true;
+      loginBtn.innerText = "جاري تسجيل الدخول...";
 
       fetch(SCRIPT_URL, {
         method: 'POST',
@@ -242,37 +267,31 @@
       })
       .then(res => res.json())
       .then(data => {
+        loginBtn.disabled = false;
+        loginBtn.innerText = "تسجيل الدخول";
         if(data.status === 'success') {
-          currentUser = data;
-          document.getElementById('authSection').classList.add('hidden');
-          document.getElementById('mainSection').classList.remove('hidden');
-          document.getElementById('welcomeMsg').innerText = "مرحباً بك: " + data.userName;
-          
-          if(data.isAdmin) {
-            document.getElementById('adminArea').classList.remove('hidden');
-            document.getElementById('addExpenseArea').classList.remove('hidden');
-            document.querySelectorAll('.admin-col').forEach(el => el.classList.remove('hidden'));
-          }
-
-          if(data.isPaid) {
-            document.getElementById('userStatusArea').classList.remove('hidden');
-          }
-
-          loadDonations();
-          loadExpenses();
+          enterSystem(data);
         } else {
           alert(data.message);
         }
       })
-      .catch(err => alert('حدث خطأ في الاتصال بالأمر'));
+      .catch(err => {
+        loginBtn.disabled = false;
+        loginBtn.innerText = "تسجيل الدخول";
+        alert('حدث خطأ في الاتصال بالأمر');
+      });
     }
 
     function register() {
       const name = document.getElementById('regName').value;
       const phone = document.getElementById('regPhone').value;
       const password = document.getElementById('regPassword').value;
+      const regBtn = document.getElementById('regBtn');
 
       if(!name || !phone || !password) { alert('يرجى ملء جميع الحقول'); return; }
+
+      regBtn.disabled = true;
+      regBtn.innerText = "جاري تسجيل الحساب...";
 
       fetch(SCRIPT_URL, {
         method: 'POST',
@@ -280,8 +299,20 @@
       })
       .then(res => res.json())
       .then(data => {
-        alert(data.message);
-        if(data.status === 'success') toggleAuth('login');
+        regBtn.disabled = false;
+        regBtn.innerText = "تسجيل الحساب";
+
+        if(data.status === 'success') {
+          // الانتهاء والدخول إلى النظام مباشرة
+          enterSystem(data.userData);
+        } else {
+          alert(data.message);
+        }
+      })
+      .catch(err => {
+        regBtn.disabled = false;
+        regBtn.innerText = "تسجيل الحساب";
+        alert('حدث خطأ أثناء إجراء التسجيل');
       });
     }
 
