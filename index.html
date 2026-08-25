@@ -47,8 +47,8 @@
     <div class="logo-container">
       <img src="https://via.placeholder.com/120" alt="Logo" class="app-logo">
     </div>
-    <h2>أسرة مجمع الفكي علي الشيخ حماد</h2>
-    <div class="sub-title">يد تبني</div>
+    <h2>أسرة الفكي علي الشيخ حماد</h2>
+    <div class="sub-title">قال تعالى:﴿وَتَعَاوَنُوا عَلَى الْبِرِّ وَالتَّقْوَىٰ ۖ وَلَا تَعَاوَنُوا عَلَى الْإِثْمِ وَالْعُدْوَانِ﴾</div>
 
     <div class="orange-notice">
       تنبيه: سيتم إغلاق التبرعات بنهاية كل شهر ويتم احتساب المبلغ المتبرع به في الشهر الجديد وشكراً لتفهمكم.
@@ -90,7 +90,7 @@
       <!-- نموذج رفع الإشعار -->
       <div id="donationFormArea" class="card" style="background-color: #fafafa; border: 1px dashed #1e5631; margin-top:10px;">
         <h4>تسجيل / رفع إشعار التبرع</h4>
-        <label>المبلغ المستحق: <b>10000 ريال</b></label>
+        <label>المبلغ المستحق: <b>10000 SDG</b></label>
         <input type="hidden" id="donAmount" value="10000">
         <input type="file" id="donReceipt" accept="image/*" required>
         <button id="donBtn" onclick="submitDonation()">إرسال الإشعار والتأكيد</button>
@@ -262,7 +262,7 @@
         document.getElementById('statsBox').innerHTML = `
           📌 <b>إحصائيات الشهر الحالي:</b><br>
           • عدد المسددين: <b>${stats.paidCount} شخص</b><br>
-          • إجمالي المبلغ المالي المحصل: <b>${stats.totalPaidAmount.toLocaleString()} ريال</b><br>
+          • إجمالي المبلغ المالي المحصل: <b>${stats.totalPaidAmount.toLocaleString()} SDG</b><br>
           • عدد الذين لم يدفعوا بعد: <b>${stats.unpaidCount} شخص</b>
         `;
 
