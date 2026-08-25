@@ -3,25 +3,29 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>تطبيق مسجد الفكي علي الشيخ حماد</title>
+  <title>تطبيق مجمع الفكي علي الشيخ حماد</title>
   
-  <!-- إعدادات تطبيق PWA والجوال -->
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#1e5631">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="مسجد الفكي">
-  <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/2983/2983803.png">
+  <meta name="apple-mobile-web-app-title" content="مجمع الفكي">
+  <link rel="apple-touch-icon" href="https://i.ibb.co/L5hY8mQ/logo.jpg">
 
   <style>
     body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f6f9; margin: 0; padding: 12px; direction: rtl; -webkit-tap-highlight-color: transparent; }
-    .card { background: #fff; padding: 20px; border-radius: 12px; max-width: 650px; margin: 10px auto; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+    .card { background: #fff; padding: 20px; border-radius: 12px; max-width: 680px; margin: 10px auto; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+    .logo-container { text-align: center; margin-bottom: 10px; }
+    .app-logo { max-width: 140px; height: auto; border-radius: 50%; box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
     h2, h3, h4 { color: #1e5631; text-align: center; margin-top: 5px; }
     input, select, button { width: 100%; padding: 12px; margin: 6px 0; border-radius: 8px; border: 1px solid #ccc; box-sizing: border-box; font-size: 14px; }
     button { background-color: #1e5631; color: white; border: none; font-weight: bold; cursor: pointer; transition: 0.3s; }
     button:active { opacity: 0.85; }
+    button:disabled { background-color: #bdc3c7 !important; cursor: not-allowed; opacity: 0.7; }
     .btn-admin { background-color: #8e44ad !important; }
+    .btn-edit { background-color: #f39c12 !important; padding: 4px 8px; font-size: 11px; width: auto; margin: 2px; }
+    .btn-delete { background-color: #c0392b !important; padding: 4px 8px; font-size: 11px; width: auto; margin: 2px; }
     .btn-download { background-color: #c0392b !important; }
     .btn-install { background-color: #d35400 !important; color: #fff; margin-top: 10px; font-size: 15px; }
     .btn-nav { width: 48%; display: inline-block; margin: 1%; }
@@ -33,42 +37,30 @@
     .badge-wait { color: #d35400; font-weight: bold; }
     .note { font-size: 12px; color: #666; margin-bottom: 3px; display: block; }
     .thank-you-card { background: #e8f8f5; border: 1px solid #2ecc71; padding: 15px; border-radius: 8px; text-align: center; color: #117a65; margin: 10px 0; }
-    
-    .orange-notice { 
-      background-color: #fff3cd; 
-      color: #d35400; 
-      border: 1px solid #f39c12; 
-      padding: 12px; 
-      border-radius: 8px; 
-      text-align: center; 
-      font-weight: bold; 
-      font-size: 13px; 
-      line-height: 1.6;
-      margin-top: 20px;
-    }
-
+    .orange-notice { background-color: #fff3cd; color: #d35400; border: 1px solid #f39c12; padding: 12px; border-radius: 8px; text-align: center; font-weight: bold; font-size: 13px; line-height: 1.6; margin-top: 20px; }
     .summary-box { background: #f8f9f9; padding: 10px; border-radius: 6px; font-weight: bold; margin-top: 10px; border: 1px solid #ebedef; }
     .date-filter-box { background: #ffffff; padding: 8px; border: 1px solid #dcdde1; border-radius: 6px; margin: 8px 0; }
   </style>
 </head>
 <body>
 
-  <!-- شريط تثبيت التطبيق للجوال -->
   <div id="installBanner" class="card hidden" style="background: #eaf2f8; border: 1px solid #2980b9;">
     <h4 style="margin:0; color:#2980b9;">📲 تثبيت التطبيق على الجوال</h4>
     <p style="font-size:12px; color:#555; text-align:center; margin: 5px 0;">قم بتثبيت التطبيق للوصول السريع بدون الحاجة لفتح المتصفح في كل مرة.</p>
     <button id="btnInstallApp" class="btn-install">تثبيت التطبيق الآن 📲</button>
   </div>
 
-  <!-- 1. شاشة الدخول والتسجيل -->
   <div id="authSection" class="card">
-    <h2>مسجد الفكي علي الشيخ حماد</h2>
+    <div class="logo-container">
+      <img src="https://i.ibb.co/L5hY8mQ/logo.jpg" alt="لوقو مجمع الفكي علي الشيخ حماد" class="app-logo">
+    </div>
+    <h2>أسرة مجمع الفكي علي الشيخ حماد</h2>
 
     <div id="loginForm">
       <h3>تسجيل الدخول</h3>
       <input type="tel" id="loginPhone" placeholder="رقم الهاتف (بدون 0 مثلاً: 912345678)">
       <input type="password" id="loginPassword" placeholder="كلمة المرور">
-      <button onclick="login()">دخول</button>
+      <button id="btnLoginBtn" onclick="login()">دخول</button>
       <p style="text-align:center; font-size: 14px;">ليس لديك حساب؟ <a href="#" onclick="toggleAuth('register')">إنشاء حساب جديد</a></p>
     </div>
 
@@ -77,7 +69,7 @@
       <input type="text" id="regName" placeholder="الاسم الكامل">
       <input type="tel" id="regPhone" placeholder="رقم الهاتف (بدون 0 مثلاً: 912345678)">
       <input type="password" id="regPassword" placeholder="كلمة المرور">
-      <button onclick="register()">تسجيل الحساب</button>
+      <button id="btnRegBtn" onclick="register()">تسجيل الحساب</button>
       <p style="text-align:center; font-size: 14px;">لديك حساب بالفعل؟ <a href="#" onclick="toggleAuth('login')">تسجيل الدخول</a></p>
     </div>
 
@@ -86,16 +78,19 @@
     </div>
   </div>
 
-  <!-- 2. الشاشة الرئيسية للمستخدم -->
   <div id="appSection" class="card hidden">
+    <div class="logo-container">
+      <img src="https://i.ibb.co/L5hY8mQ/logo.jpg" alt="لوقو مجمع الفكي علي الشيخ حماد" class="app-logo" style="max-width: 90px;">
+    </div>
+
     <div style="display:flex; justify-content:space-between; align-items:center;">
       <h3>مرحباً، <span id="userDisplayName"></span></h3>
       <button onclick="logout()" style="width: auto; padding: 6px 14px; background:#7f8c8d;">خروج</button>
     </div>
 
-    <div id="thankYouMessage" class="thank-you-card hidden">
+    <div id="thankYouMessage" class="thank-you-card">
       🎉 <strong>جزاكم الله خيراً وتقبل منا ومنكم صالح الأعمال</strong><br>
-      نشكركم على مساهمتكم الكريمة ودعمكم لمسجد الفكي علي الشيخ حماد.
+      نشكركم على مساهمتكم الكريمة ودعمكم لمجمع الفكي علي الشيخ حماد.
     </div>
 
     <div id="monthClosedNotice" class="hidden" style="background:#fadbd8; color:#78281f; padding:12px; border-radius:6px; text-align:center; font-weight:bold; margin-bottom: 10px;">
@@ -119,15 +114,15 @@
       <label class="note">إرفاق صورة الإشعار (لتغيير الحالة إلى تم الدفع):</label>
       <input type="file" id="receiptFile" accept="image/*">
       
-      <button onclick="sendDonation()" style="background-color: #27ae60;">تأكيد الدفع وإرسال التقرير للواتساب 💬</button>
+      <button id="sendDonationBtn" onclick="sendDonation()" style="background-color: #27ae60;">تأكيد الدفع وإرسال التقرير للواتساب 💬</button>
     </div>
 
-    <div id="adminArea" class="hidden" style="background: #f4ecf7; padding: 12px; border-radius: 8px; margin: 15px 0;">
-      <h4 style="color:#8e44ad;">💼 لوحة تسجيل وإدارة المصروفات (للإدارة)</h4>
+    <div id="adminArea" style="background: #f4ecf7; padding: 12px; border-radius: 8px; margin: 15px 0;">
+      <h4 style="color:#8e44ad;">💼 لوحة تسجيل وإدارة المصروفات</h4>
       
       <input type="text" id="expenseTitle" placeholder="بيان المصروف (مثلاً: صيانات، كهرباء...)">
       <input type="number" id="expenseAmount" placeholder="المبلغ بالجنيه السوداني (SDG)">
-      <button onclick="addExpense()" class="btn-admin">تسجيل وإرسال تقرير المصروفات للواتساب 📄💬</button>
+      <button id="addExpenseBtn" onclick="addExpense()" class="btn-admin">تسجيل وإرسال تقرير المصروفات للواتساب 📄💬</button>
       
       <hr style="border: 0.5px solid #dcdde1; margin: 15px 0;">
       
@@ -150,7 +145,12 @@
       <h4>قائمة المسددين (تم الدفع)</h4>
       <button onclick="downloadPDF('paid')" class="btn-download">تنزيل PDF المسددين 📄</button>
       <table>
-        <thead><tr><th>#</th><th>الاسم</th><th>الشهر</th><th>المبلغ (SDG)</th><th>الإشعار</th></tr></thead>
+        <thead>
+          <tr>
+            <th>#</th><th>الاسم</th><th>الشهر</th><th>المبلغ (SDG)</th><th>الإشعار</th>
+            <th class="admin-col hidden">إجراءات الإدارة</th>
+          </tr>
+        </thead>
         <tbody id="paidTableBody"></tbody>
       </table>
       <div id="paidSummary" class="summary-box"></div>
@@ -163,6 +163,7 @@
         <thead>
           <tr>
             <th>#</th><th>الاسم</th><th>المبلغ (SDG)</th><th>تم الدفع</th><th>في الانتظار</th><th>الإشعار</th>
+            <th class="admin-col hidden">إجراءات الإدارة</th>
           </tr>
         </thead>
         <tbody id="allTableBody"></tbody>
@@ -180,6 +181,7 @@
 
     let currentUser = null;
     let deferredPrompt = null;
+    let isSubmitting = false;
 
     window.addEventListener('beforeinstallprompt', (e) => {
       e.preventDefault();
@@ -205,7 +207,6 @@
       }
     };
 
-    // دالة الاتصال المحدثة والآمنة لتفادي CORS و Failed to fetch
     function callBackend(data, callback) {
       const encodedData = encodeURIComponent(JSON.stringify(data));
       
@@ -216,13 +217,15 @@
       .then(res => res.json())
       .then(response => callback(response))
       .catch(err => {
-        // تجربة الإرسال عبر النموذج في حال حظر طلبات GET المباشرة
         const formData = new FormData();
         formData.append('data', JSON.stringify(data));
         fetch(API_URL, { method: "POST", body: formData })
           .then(r => r.json())
           .then(res => callback(res))
-          .catch(e => alert("حدث خطأ في الاتصال بالسيرفر! يرجى التأكد من ضبط صلاحيات النشر (Anyone) في Google Script."));
+          .catch(e => {
+            alert("حدث خطأ في الاتصال بالسيرفر! يرجى التأكد من ضبط صلاحيات النشر (Anyone) في Google Script.");
+            if(callback) callback({ status: "error" });
+          });
       });
     }
 
@@ -237,25 +240,37 @@
     }
 
     function register() {
+      const btn = document.getElementById('btnRegBtn');
       const name = document.getElementById('regName').value;
       const phone = document.getElementById('regPhone').value;
       const password = document.getElementById('regPassword').value;
 
       if(!name || !phone || !password) return alert("يرجى ملء جميع الحقول");
 
+      btn.disabled = true;
+      btn.innerText = "جاري إنشاء الحساب...";
+
       callBackend({ action: 'register', name, phone, password }, res => {
+        btn.disabled = false;
+        btn.innerText = "تسجيل الحساب";
         alert(res.message);
         if(res.status === 'success') toggleAuth('login');
       });
     }
 
     function login() {
+      const btn = document.getElementById('btnLoginBtn');
       const phone = document.getElementById('loginPhone').value;
       const password = document.getElementById('loginPassword').value;
 
       if(!phone || !password) return alert("يرجى إدخال رقم الهاتف وكلمة المرور");
 
+      btn.disabled = true;
+      btn.innerText = "جاري الدخول...";
+
       callBackend({ action: 'login', phone, password }, res => {
+        btn.disabled = false;
+        btn.innerText = "دخول";
         if(res.status === 'success') {
           currentUser = res;
           localStorage.setItem("msg_user", JSON.stringify(res));
@@ -281,11 +296,7 @@
       }
 
       if(currentUser.isAdmin) {
-        document.getElementById('adminArea').classList.remove('hidden');
-      }
-
-      if(currentUser.isPaid) {
-        document.getElementById('thankYouMessage').classList.remove('hidden');
+        document.querySelectorAll('.admin-col').forEach(el => el.classList.remove('hidden'));
       }
 
       const today = new Date().getDate();
@@ -298,6 +309,9 @@
     }
 
     function sendDonation() {
+      if(isSubmitting) return;
+
+      const btn = document.getElementById('sendDonationBtn');
       const amount = document.getElementById('donationAmount').value;
       const month = document.getElementById('donationMonth').value;
       const fileInput = document.getElementById('receiptFile');
@@ -305,15 +319,18 @@
       if(!amount) return alert("يرجى إدخال المبلغ");
       if(fileInput.files.length === 0) return alert("يرجى إرفاق صورة الإشعار ليتم تغيير الحالة إلى (تم الدفع ✔)");
 
+      isSubmitting = true;
+      btn.disabled = true;
+      btn.innerText = "جاري إرسال التبرع...";
+
       const reader = new FileReader();
       reader.onload = function(e) {
-        submitDonationData(amount, month, e.target.result);
+        submitDonationData(amount, month, e.target.result, btn);
       };
       reader.readAsDataURL(fileInput.files[0]);
     }
 
-    function submitDonationData(amount, month, receiptData) {
-      alert("جاري التحديث، تنزيل الـ PDF، والفتح في الواتساب...");
+    function submitDonationData(amount, month, receiptData, btn) {
       callBackend({
         action: 'addDonation',
         userName: currentUser.userName,
@@ -322,19 +339,24 @@
         month: month,
         receiptData: receiptData
       }, res => {
+        isSubmitting = false;
+        btn.disabled = false;
+        btn.innerText = "تأكيد الدفع وإرسال التقرير للواتساب 💬";
+
         if(res.status === 'success') {
           document.getElementById('receiptFile').value = '';
-          document.getElementById('thankYouMessage').classList.remove('hidden');
           currentUser.isPaid = true;
           localStorage.setItem("msg_user", JSON.stringify(currentUser));
 
           window.open(res.pdfDownloadUrl, '_blank');
 
-          const message = encodeURIComponent("السلام عليكم ورحمة الله، تم الدفع وإرفاق الإشعار لصالح مسجد الفكي علي الشيخ حماد\n" +
-            "المتبرع: " + currentUser.userName + "\n" +
-            "الشهر: " + month + "\n" +
-            "المبلغ: " + amount + " جنيه سوداني\n" +
-            "مرفق كشف التبرعات المحدث PDF.");
+          const message = encodeURIComponent("🎉 جزاكم الله خيراً وتقبل الله منا ومنكم صالح الأعمال.\n\n" +
+            "نشكرك أ/ " + currentUser.userName + " على المساهمة الكريمة والدعم المبارك لمجمع الفكي علي الشيخ حماد.\n\n" +
+            "📌 تفاصيل التبرع:\n" +
+            "▫️ الشهر: " + month + "\n" +
+            "▫️ المبلغ: " + amount + " جنيه سوداني\n" +
+            "▫️ الحالة: تم التأكيد وإرفاق الإشعار بنجاح.\n\n" +
+            "مرفق كشف التبرعات المحدث (PDF).");
 
           setTimeout(() => {
             window.open("https://api.whatsapp.com/send?phone=" + res.targetPhone + "&text=" + message, '_blank');
@@ -347,20 +369,58 @@
       });
     }
 
+    function editItem(rowIndex, name, amount, status) {
+      const newName = prompt("تعديل الاسم:", name);
+      if(newName === null) return;
+      const newAmount = prompt("تعديل المبلغ (SDG):", amount);
+      if(newAmount === null) return;
+      const newStatus = prompt("تعديل الحالة (تم الدفع / في الانتظار):", status);
+      if(newStatus === null) return;
+
+      callBackend({
+        action: 'editDonation',
+        rowIndex: rowIndex,
+        name: newName,
+        amount: newAmount,
+        status: newStatus
+      }, res => {
+        alert(res.message);
+        showPaidList();
+      });
+    }
+
+    function deleteItem(rowIndex) {
+      if(!confirm("هل أنت تأكد من رغبتك في حذف هذا السجل؟")) return;
+      callBackend({
+        action: 'deleteDonation',
+        rowIndex: rowIndex
+      }, res => {
+        alert(res.message);
+        showPaidList();
+      });
+    }
+
     function addExpense() {
+      const btn = document.getElementById('addExpenseBtn');
       const title = document.getElementById('expenseTitle').value;
       const amount = document.getElementById('expenseAmount').value;
+
       if(!title || !amount) return alert("يرجى إدخال بيان وقيمة المصروف");
 
-      alert("جاري تسجيل المصروف وإعداد التقرير للواتساب...");
+      btn.disabled = true;
+      btn.innerText = "جاري إرسال المصروف...";
+
       callBackend({ action: 'addExpense', title, amount, phone: currentUser.phone }, res => {
+        btn.disabled = false;
+        btn.innerText = "تسجيل وإرسال تقرير المصروفات للواتساب 📄💬";
+
         if(res.status === 'success') {
           document.getElementById('expenseTitle').value = '';
           document.getElementById('expenseAmount').value = '';
 
           window.open(res.pdfDownloadUrl, '_blank');
 
-          const message = encodeURIComponent("إشعار مصروفات جديد - مسجد الفكي علي الشيخ حماد\n" +
+          const message = encodeURIComponent("إشعار مصروفات جديد - أسرة مجمع الفكي علي الشيخ حماد\n" +
             "البيان: " + title + "\n" +
             "المبلغ: " + amount + " جنيه سوداني\n" +
             "مرفق تقرير المصروفات المحدث PDF.");
@@ -401,9 +461,15 @@
           data.forEach(item => {
             if(item.status === 'تم الدفع') {
               count++;
-              sum += parseFloat(item.amount);
+              sum += parseFloat(item.amount || 0);
               const receiptBtn = item.receiptUrl ? `<a href="${item.receiptUrl}" target="_blank"><button style="padding: 2px 6px; font-size: 11px;">معاينة</button></a>` : '-';
-              tbody.innerHTML += `<tr><td>${count}</td><td>${item.name}</td><td>${item.month || '-'}</td><td>${item.amount} SDG</td><td>${receiptBtn}</td></tr>`;
+              
+              let adminButtons = '';
+              if(currentUser && currentUser.isAdmin) {
+                adminButtons = `<td class="admin-col"><button class="btn-edit" onclick="editItem(${item.rowIndex}, '${item.name}', '${item.amount}', '${item.status}')">تعديل</button><button class="btn-delete" onclick="deleteItem(${item.rowIndex})">حذف</button></td>`;
+              }
+
+              tbody.innerHTML += `<tr><td>${count}</td><td>${item.name}</td><td>${item.month || '-'}</td><td>${item.amount} SDG</td><td>${receiptBtn}</td>${adminButtons}</tr>`;
             }
           });
         }
@@ -426,16 +492,22 @@
             let paidCol = '-', waitCol = '-';
             if(item.status === 'تم الدفع') {
               paidCol = '<span class="badge-paid">✔ تم الدفع</span>';
-              paidSum += parseFloat(item.amount);
+              paidSum += parseFloat(item.amount || 0);
               paidCount++;
             } else {
               waitCol = '<span class="badge-wait">⏳ في الانتظار</span>';
-              waitSum += parseFloat(item.amount);
+              waitSum += parseFloat(item.amount || 0);
               waitCount++;
             }
 
             const receiptBtn = item.receiptUrl ? `<a href="${item.receiptUrl}" target="_blank"><button style="padding: 2px 6px; font-size: 11px;">معاينة</button></a>` : '-';
-            tbody.innerHTML += `<tr><td>${index + 1}</td><td>${item.name}</td><td>${item.amount} SDG</td><td>${paidCol}</td><td>${waitCol}</td><td>${receiptBtn}</td></tr>`;
+            
+            let adminButtons = '';
+            if(currentUser && currentUser.isAdmin) {
+              adminButtons = `<td class="admin-col"><button class="btn-edit" onclick="editItem(${item.rowIndex}, '${item.name}', '${item.amount}', '${item.status}')">تعديل</button><button class="btn-delete" onclick="deleteItem(${item.rowIndex})">حذف</button></td>`;
+            }
+
+            tbody.innerHTML += `<tr><td>${index + 1}</td><td>${item.name}</td><td>${item.amount} SDG</td><td>${paidCol}</td><td>${waitCol}</td><td>${receiptBtn}</td>${adminButtons}</tr>`;
           });
         }
 
