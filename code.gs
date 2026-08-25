@@ -79,7 +79,7 @@ function processForm(data) {
     
     usersSheet.appendRow([data.name, cleanPhone, data.password, "مستخدم"]);
 
-    // إضافة تلقائية لكشف التبرعات
+    // إضافة تلقائية لكشف التبرعات بمبلغ افتراضي 10000
     donationsSheet.appendRow([
       data.name,
       cleanPhone,
@@ -180,7 +180,7 @@ function processForm(data) {
     };
   }
 
-  // 4. رفع وتحديث الإشعار
+  // 4. رفع وتحديث الإشعار والمبلغ
   if (action === "addDonation") {
     if (!data.receiptData) {
       return { status: "error", message: "إرفاق إشعار التبرع إجباري!" };
@@ -202,7 +202,7 @@ function processForm(data) {
     for (let i = 1; i < donationsData.length; i++) {
       if (donationsData[i][1].toString().trim() === cleanPhone) {
         donationsSheet.getRange(i + 1, 3).setValue(data.month || currentMonth);
-        donationsSheet.getRange(i + 1, 4).setValue(data.amount || 10000);
+        donationsSheet.getRange(i + 1, 4).setValue(data.amount || 10000); // تحديث بالمبلغ الجديد
         if (receiptUrl) donationsSheet.getRange(i + 1, 5).setValue(receiptUrl);
         donationsSheet.getRange(i + 1, 6).setValue("تم الدفع");
         donationsSheet.getRange(i + 1, 7).setValue(new Date());
@@ -275,7 +275,6 @@ function processForm(data) {
   return { status: "error", message: "طلب غير معروف!" };
 }
 
-// إعادة إسناد جميع الحالات لـ "في الانتظار" عند التحول لشهر جديد
 function checkAndResetMonthlyStatus(donationsSheet, currentMonth) {
   const data = donationsSheet.getDataRange().getValues();
   if (data.length <= 1) return;
@@ -284,7 +283,7 @@ function checkAndResetMonthlyStatus(donationsSheet, currentMonth) {
   if (firstRecordMonth && firstRecordMonth !== currentMonth) {
     for (let i = 1; i < data.length; i++) {
       donationsSheet.getRange(i + 1, 3).setValue(currentMonth);
-      donationsSheet.getRange(i + 1, 5).setValue(""); // مسح رابط الإشعار السابق
+      donationsSheet.getRange(i + 1, 5).setValue("");
       donationsSheet.getRange(i + 1, 6).setValue("في الانتظار");
     }
   }
