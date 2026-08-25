@@ -5,82 +5,51 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>تطبيق مجمع الفكي علي الشيخ حماد</title>
   
-  <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#1e5631">
-  <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="مجمع الفكي">
-
   <style>
-    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f6f9; margin: 0; padding: 12px; direction: rtl; -webkit-tap-highlight-color: transparent; }
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f6f9; margin: 0; padding: 12px; direction: rtl; }
     .card { background: #fff; padding: 20px; border-radius: 12px; max-width: 680px; margin: 10px auto; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
     .logo-container { text-align: center; margin-bottom: 10px; }
-    .app-logo { max-width: 130px; height: 130px; border-radius: 50%; box-shadow: 0 2px 8px rgba(0,0,0,0.15); object-fit: cover; }
+    .app-logo { max-width: 120px; height: 120px; border-radius: 50%; box-shadow: 0 2px 8px rgba(0,0,0,0.15); object-fit: cover; }
     h2, h3, h4 { color: #1e5631; text-align: center; margin-top: 5px; }
     .sub-title { color: #555; text-align: center; font-size: 14px; margin-bottom: 5px; }
     input, select, button { width: 100%; padding: 12px; margin: 6px 0; border-radius: 8px; border: 1px solid #ccc; box-sizing: border-box; font-size: 14px; }
     button { background-color: #1e5631; color: white; border: none; font-weight: bold; cursor: pointer; transition: 0.3s; }
     button:active { opacity: 0.85; }
-    button:disabled { background-color: #bdc3c7 !important; cursor: not-allowed; opacity: 0.7; }
-    .btn-admin { background-color: #8e44ad !important; }
-    .btn-edit { background-color: #f39c12 !important; padding: 4px 8px; font-size: 11px; width: auto; margin: 2px; }
-    .btn-delete { background-color: #c0392b !important; padding: 4px 8px; font-size: 11px; width: auto; margin: 2px; }
-    .btn-download { background-color: #c0392b !important; }
+    button:disabled { background-color: #bdc3c7 !important; cursor: not-allowed; }
+    .btn-secondary { background-color: #2980b9 !important; }
+    .btn-edit { background-color: #f39c12 !important; padding: 4px 8px; font-size: 11px; width: auto; }
+    .btn-delete { background-color: #c0392b !important; padding: 4px 8px; font-size: 11px; width: auto; }
     .btn-nav { width: 48%; display: inline-block; margin: 1%; }
     .hidden { display: none !important; }
     table { width: 100%; border-collapse: collapse; margin-top: 12px; }
-    th, td { border: 1px solid #ddd; padding: 7px; text-align: center; font-size: 13px; }
+    th, td { border: 1px solid #ddd; padding: 8px; text-align: center; font-size: 13px; }
     th { background-color: #1e5631; color: white; }
     .badge-paid { color: #27ae60; font-weight: bold; }
     .badge-wait { color: #d35400; font-weight: bold; }
-    .note { font-size: 12px; color: #666; margin-bottom: 3px; display: block; }
-    .thank-you-card { background: #e8f8f5; border: 1px solid #2ecc71; padding: 15px; border-radius: 8px; text-align: center; color: #117a65; margin: 10px 0; }
-    .orange-notice { background-color: #fff3cd; color: #d35400; border: 1px solid #f39c12; padding: 12px; border-radius: 8px; text-align: center; font-weight: bold; font-size: 13px; line-height: 1.6; margin-top: 10px; margin-bottom: 15px; }
-    .summary-box { background: #f8f9f9; padding: 10px; border-radius: 6px; font-weight: bold; margin-top: 10px; border: 1px solid #ebedef; }
+    .orange-notice { background-color: #fff3cd; color: #d35400; border: 1px solid #f39c12; padding: 10px; border-radius: 8px; text-align: center; font-weight: bold; font-size: 13px; margin: 10px 0; }
+    .stats-card { background: #eaf2f8; border: 1px solid #aeb6bf; padding: 12px; border-radius: 8px; margin: 10px 0; font-size: 13px; line-height: 1.8; }
+    .print-actions { display: flex; gap: 8px; margin-top: 10px; }
+    .print-actions button { flex: 1; }
 
-    /* رأس صفحة الطباعة */
-    .print-header { display: none; }
-
+    /* تنسيقات الطباعة */
     @media print {
       body { background: white; padding: 0; }
       .card { box-shadow: none; max-width: 100%; border: none; margin: 0; }
-      #authSection, #installBanner, .btn-download, .btn-nav, button, input, select, .orange-notice, #adminArea, #donationFormArea, .admin-col, .date-filter-box { display: none !important; }
+      #authSection, .print-actions, .btn-nav, button, input, select, .orange-notice, #donationFormArea, .admin-col { display: none !important; }
       .hidden { display: none !important; }
-      
-      .print-header {
-        display: flex !important;
-        justify-content: space-between;
-        align-items: center;
-        width: 100%;
-        border-bottom: 2px solid #1e5631;
-        padding-bottom: 10px;
-        margin-bottom: 15px;
-      }
-      .print-header img { width: 75px; height: 75px; border-radius: 50%; }
-      .print-header .title { color: #1e5631; font-family: 'Times New Roman', Times, serif; font-size: 16pt; font-weight: bold; text-align: center; }
-      table { page-break-inside: auto; }
-      tr { page-break-inside: avoid; page-break-after: auto; }
-      thead { display: table-header-group; }
+      table { width: 100%; }
     }
   </style>
 </head>
 <body>
 
-  <!-- رأس الطباعة والتصدير المباشر -->
-  <div class="print-header">
-    <img src="data:image/jpeg;base64,..." alt="Logo">
-    <div class="title">مجمع الفكي علي الشيخ حماد</div>
-  </div>
-
   <div class="card">
     <div class="logo-container">
-      <img src="https://via.placeholder.com/130" alt="Logo" class="app-logo">
+      <img src="https://via.placeholder.com/120" alt="Logo" class="app-logo">
     </div>
     <h2>أسرة مجمع الفكي علي الشيخ حماد</h2>
     <div class="sub-title">يد تبني</div>
 
-    <!-- التنبيه المطلوب مباشرة أسفل نص (يد تبني) -->
     <div class="orange-notice">
       تنبيه: سيتم إغلاق التبرعات بنهاية كل شهر ويتم احتساب المبلغ المتبرع به في الشهر الجديد وشكراً لتفهمكم.
     </div>
@@ -89,64 +58,75 @@
     <div id="authSection">
       <div id="loginForm">
         <h3>تسجيل الدخول</h3>
-        <input type="tel" id="loginPhone" placeholder="رقم الهاتف">
+        <input type="tel" id="loginPhone" placeholder="رقم الهاتف (بدون 0 في البداية)">
         <input type="password" id="loginPassword" placeholder="كلمة المرور">
-        <button onclick="login()">دخول</button>
+        <button id="loginBtn" onclick="login()">دخول</button>
         <p style="text-align:center;">ليس لديك حساب؟ <a href="#" onclick="toggleAuth(true)">تسجيل حساب جديد</a></p>
       </div>
 
       <div id="registerForm" class="hidden">
         <h3>تسجيل حساب جديد</h3>
         <input type="text" id="regName" placeholder="الاسم الكامل">
-        <input type="tel" id="regPhone" placeholder="رقم الهاتف">
+        <input type="tel" id="regPhone" placeholder="رقم الهاتف (بدون 0 في البداية)">
         <input type="password" id="regPassword" placeholder="كلمة المرور">
-        <button onclick="register()">تسجيل وإضافة للكشف</button>
+        <button id="regBtn" onclick="register()">تسجيل وإضافة للكشف</button>
         <p style="text-align:center;">لديك حساب بالفعل؟ <a href="#" onclick="toggleAuth(false)">تسجيل الدخول</a></p>
       </div>
     </div>
 
     <!-- المحتوى الرئيسي بعد تسجيل الدخول -->
     <div id="mainContent" class="hidden">
-      <div style="text-align: center; margin-bottom: 15px;">
+      <div style="text-align: center; margin-bottom: 10px;">
         <span id="userWelcome" style="font-weight:bold; color:#1e5631;"></span>
-        <button onclick="logout()" style="width:auto; padding:5px 15px; margin-right:10px; background-color:#7f8c8d;">خروج</button>
+        <button onclick="logout()" style="width:auto; padding:5px 12px; margin-right:8px; background-color:#7f8c8d;">خروج</button>
       </div>
 
-      <!-- أزرار التنقل -->
+      <!-- التنقل -->
       <div style="text-align:center;">
         <button class="btn-nav" onclick="showTab('donations')">كشف التبرعات</button>
-        <!-- زر المصروفات يظهر للإدارة فقط -->
         <button id="expensesNavBtn" class="btn-nav hidden" onclick="showTab('expenses')">إدارة المصروفات</button>
       </div>
 
-      <!-- 1. نموذج رفع التبرع (للمستخدمين) -->
-      <div id="donationFormArea" class="card" style="background-color: #fafafa; border: 1px dashed #1e5631;">
+      <!-- نموذج رفع الإشعار -->
+      <div id="donationFormArea" class="card" style="background-color: #fafafa; border: 1px dashed #1e5631; margin-top:10px;">
         <h4>تسجيل / رفع إشعار التبرع</h4>
-        <label class="note">المبلغ المستحق (ريال):</label>
-        <input type="number" id="donAmount" value="10000" placeholder="المبلغ">
-        
-        <label class="note">إشعار التبرع (إجباري):</label>
-        <!-- خيار الإشعار إجباري required -->
+        <label>المبلغ المستحق: <b>10000 ريال</b></label>
+        <input type="hidden" id="donAmount" value="10000">
         <input type="file" id="donReceipt" accept="image/*" required>
-        
-        <button onclick="submitDonation()">إرسال الإشعار والتأكيد</button>
+        <button id="donBtn" onclick="submitDonation()">إرسال الإشعار والتأكيد</button>
       </div>
 
-      <!-- 2. تبويب التبرعات -->
+      <!-- تبويب التبرعات -->
       <div id="donationsTab">
         <h3>كشف التبرعات العام</h3>
+        
+        <!-- صندوق إحصائيات الشهر -->
+        <div id="statsBox" class="stats-card">
+          جاري تحميل الإحصائيات...
+        </div>
+
+        <div class="print-actions">
+          <button class="btn-secondary" onclick="window.print()">طباعة كشف التبرعات</button>
+          <button id="downloadPdfBtn" style="background-color:#c0392b;" onclick="downloadPDF('donations')">تحميل الكشف PDF</button>
+        </div>
+
         <div id="donationsTableContainer"></div>
       </div>
 
-      <!-- 3. تبويب المصروفات (للإدارة فقط) -->
+      <!-- تبويب المصروفات -->
       <div id="expensesTab" class="hidden">
-        <h3>إدارة المصروفات (خاص بالإدارة)</h3>
+        <h3>إدارة المصروفات</h3>
         
         <div class="card" style="background-color: #fcf3cf;">
           <h4>إضافة مصروف جديد</h4>
           <input type="text" id="expTitle" placeholder="بيان المصروف">
           <input type="number" id="expAmount" placeholder="المبلغ">
-          <button class="btn-admin" onclick="addExpense()">تسجيل المصروف</button>
+          <button id="expBtn" onclick="addExpense()">تسجيل المصروف</button>
+        </div>
+
+        <div class="print-actions">
+          <button class="btn-secondary" onclick="window.print()">طباعة المصروفات</button>
+          <button style="background-color:#c0392b;" onclick="downloadPDF('expenses')">تحميل المصروفات PDF</button>
         </div>
 
         <div id="expensesTableContainer"></div>
@@ -156,14 +136,29 @@
   </div>
 
   <script>
-    // ضع رابط الـ Web App الخاص بك هنا بعد النشر
-    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzS7M8UiFAPXvXZ2WeN2bLYEFf0kWfmtAd2j1TLYYjP-_2rW12-f9eHs8Lrij6hld84/exec";
-
+    const SCRIPT_URL = "YOUR_GOOGLE_APPS_SCRIPT_WEB_APP_URL";
     let currentUser = null;
+
+    // استعادة الجلسة تلقائياً عند تحديث الصفحة
+    window.onload = function() {
+      const savedUser = localStorage.getItem('appUser');
+      if (savedUser) {
+        currentUser = JSON.parse(savedUser);
+        onLoggedIn();
+      }
+    };
 
     function toggleAuth(showRegister) {
       document.getElementById('loginForm').classList.toggle('hidden', showRegister);
       document.getElementById('registerForm').classList.toggle('hidden', !showRegister);
+    }
+
+    function setBtnLoading(btnId, isLoading, defaultText, loadingText) {
+      const btn = document.getElementById(btnId);
+      if (btn) {
+        btn.disabled = isLoading;
+        btn.innerText = isLoading ? loadingText : defaultText;
+      }
     }
 
     async function postData(action, payload = {}) {
@@ -182,7 +177,7 @@
 
     async function register() {
       const name = document.getElementById('regName').value.trim();
-      const phone = document.getElementById('regPhone').value.trim();
+      let phone = document.getElementById('regPhone').value.trim().replace(/^0+/, '');
       const password = document.getElementById('regPassword').value.trim();
 
       if (!name || !phone || !password) {
@@ -190,18 +185,22 @@
         return;
       }
 
+      setBtnLoading('regBtn', true, 'تسجيل وإضافة للكشف', 'جاري إنشاء الحساب...');
       const res = await postData("register", { name, phone, password });
+      setBtnLoading('regBtn', false, 'تسجيل وإضافة للكشف', 'جاري إنشاء الحساب...');
+
       if (res.status === "success") {
         alert(res.message);
         currentUser = res.userData;
+        localStorage.setItem('appUser', JSON.stringify(currentUser));
         onLoggedIn();
       } else {
-        alert(res.message); // سيظهر رسالة التكرار إذا كان الاسم أو الهاتف مسجلاً مسبقاً
+        alert(res.message);
       }
     }
 
     async function login() {
-      const phone = document.getElementById('loginPhone').value.trim();
+      let phone = document.getElementById('loginPhone').value.trim().replace(/^0+/, '');
       const password = document.getElementById('loginPassword').value.trim();
 
       if (!phone || !password) {
@@ -209,9 +208,13 @@
         return;
       }
 
+      setBtnLoading('loginBtn', true, 'دخول', 'جاري تسجيل الدخول...');
       const res = await postData("login", { phone, password });
+      setBtnLoading('loginBtn', false, 'دخول', 'جاري تسجيل الدخول...');
+
       if (res.status === "success") {
         currentUser = res;
+        localStorage.setItem('appUser', JSON.stringify(currentUser));
         onLoggedIn();
       } else {
         alert(res.message);
@@ -220,6 +223,7 @@
 
     function logout() {
       currentUser = null;
+      localStorage.removeItem('appUser');
       document.getElementById('authSection').classList.remove('hidden');
       document.getElementById('mainContent').classList.add('hidden');
     }
@@ -229,7 +233,6 @@
       document.getElementById('mainContent').classList.remove('hidden');
       document.getElementById('userWelcome').innerText = "مرحباً: " + currentUser.userName;
 
-      // إظهار صفحة المصروفات وزرها للإدارة فقط
       if (currentUser.isAdmin) {
         document.getElementById('expensesNavBtn').classList.remove('hidden');
       } else {
@@ -252,13 +255,22 @@
     }
 
     async function loadDonations() {
-      const list = await postData("getDonations");
-      if (Array.isArray(list)) {
+      const res = await postData("getDonations");
+      if (res && res.donations) {
+        // تحديث صندوق الإحصائيات
+        const stats = res.stats;
+        document.getElementById('statsBox').innerHTML = `
+          📌 <b>إحصائيات الشهر الحالي:</b><br>
+          • عدد المسددين: <b>${stats.paidCount} شخص</b><br>
+          • إجمالي المبلغ المالي المحصل: <b>${stats.totalPaidAmount.toLocaleString()} ريال</b><br>
+          • عدد الذين لم يدفعوا بعد: <b>${stats.unpaidCount} شخص</b>
+        `;
+
         let html = `<table>
           <thead>
             <tr>
               <th>الاسم</th>
-              <th>الشهر</th>
+              <th>الشهر المستحق</th>
               <th>المبلغ</th>
               <th>الحالة</th>
               <th>الإشعار</th>
@@ -267,19 +279,20 @@
           </thead>
           <tbody>`;
 
-        list.forEach(item => {
-          const statusClass = item.status === 'تم الدفع' ? 'badge-paid' : 'badge-wait';
+        res.donations.forEach(item => {
+          const isPaid = item.status === 'تم الدفع';
+          const statusHtml = isPaid ? '<span class="badge-paid">تم الدفع ✔</span>' : '<span class="badge-wait">في الانتظار</span>';
           const receiptLink = item.receiptUrl ? `<a href="${item.receiptUrl}" target="_blank">عرض</a>` : 'لا يوجد';
           
           html += `<tr>
             <td>${item.name}</td>
             <td>${item.month}</td>
             <td>${item.amount}</td>
-            <td class="${statusClass}">${item.status}</td>
+            <td>${statusHtml}</td>
             <td>${receiptLink}</td>
             ${currentUser.isAdmin ? `
               <td class="admin-col">
-                <button class="btn-edit" onclick="editDonation(${item.rowIndex}, '${item.name}', ${item.amount}, '${item.status}')">تعديل</button>
+                <button class="btn-edit" onclick="editDonation(${item.rowIndex}, ${item.amount}, '${item.status}')">تعديل</button>
                 <button class="btn-delete" onclick="deleteDonation(${item.rowIndex})">حذف</button>
               </td>
             ` : ''}
@@ -295,12 +308,12 @@
       const amount = document.getElementById('donAmount').value;
       const fileInput = document.getElementById('donReceipt');
 
-      // التحقق الإجباري من اختيار الإشعار
       if (!fileInput.files || fileInput.files.length === 0) {
-        alert("يرجى إرفاق إشعار التبرع، الإرفاق إجباري!");
+        alert("يرجى إرفاق إشعار التبرع!");
         return;
       }
 
+      setBtnLoading('donBtn', true, 'إرسال الإشعار والتأكيد', 'جاري إرسال الإشعار...');
       const file = fileInput.files[0];
       const reader = new FileReader();
 
@@ -313,8 +326,11 @@
           receiptData: receiptData
         });
 
+        setBtnLoading('donBtn', false, 'إرسال الإشعار والتأكيد', 'جاري إرسال الإشعار...');
+
         if (res.status === "success") {
           alert(res.message);
+          fileInput.value = '';
           loadDonations();
         } else {
           alert(res.message);
@@ -324,7 +340,17 @@
       reader.readAsDataURL(file);
     }
 
-    async function editDonation(rowIndex, currentName, currentAmount, currentStatus) {
+    async function downloadPDF(type) {
+      alert("جاري تجهيز رابط الـ PDF...");
+      const res = await postData("generatePDF", { pdfType: type });
+      if (res.pdfDownloadUrl) {
+        window.open(res.pdfDownloadUrl, '_blank');
+      } else {
+        alert("تعذر إنشاء ملف PDF!");
+      }
+    }
+
+    async function editDonation(rowIndex, currentAmount, currentStatus) {
       const newAmount = prompt("أدخل المبلغ الجديد:", currentAmount);
       const newStatus = prompt("أدخل الحالة (تم الدفع / في الانتظار):", currentStatus);
 
@@ -340,7 +366,7 @@
     }
 
     async function deleteDonation(rowIndex) {
-      if (confirm("هل أنت تأكد من حذف هذا السجل؟")) {
+      if (confirm("هل أنت متأكد من حذف هذا السجل؟")) {
         const res = await postData("deleteDonation", { rowIndex: rowIndex });
         alert(res.message);
         loadDonations();
@@ -378,15 +404,17 @@
       const amount = document.getElementById('expAmount').value.trim();
 
       if (!title || !amount) {
-        alert("يرجى إدخال تفاصيل المصروف والمبلغ!");
+        alert("يرجى إدخال البيانات كاملة!");
         return;
       }
 
+      setBtnLoading('expBtn', true, 'تسجيل المصروف', 'جاري التسجيل...');
       const res = await postData("addExpense", {
         title: title,
         amount: amount,
         phone: currentUser.phone
       });
+      setBtnLoading('expBtn', false, 'تسجيل المصروف', 'جاري التسجيل...');
 
       if (res.status === "success") {
         alert(res.message);
