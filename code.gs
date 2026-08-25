@@ -116,7 +116,23 @@ function processForm(data) {
     return list;
   }
 
-  // 4. إضافة وتحديث تبرع
+  // 4. جلب قائمة المصروفات
+  if (action === "getExpenses") {
+    const expensesData = expensesSheet.getDataRange().getValues();
+    let list = [];
+    for (let i = 1; i < expensesData.length; i++) {
+      list.push({
+        rowIndex: i + 1,
+        date: expensesData[i][0] ? Utilities.formatDate(new Date(expensesData[i][0]), Session.getScriptTimeZone(), "yyyy-MM-dd") : "",
+        title: expensesData[i][1] || "",
+        amount: expensesData[i][2] || 0,
+        phone: expensesData[i][3] || ""
+      });
+    }
+    return list;
+  }
+
+  // 5. إضافة وتحديث تبرع
   if (action === "addDonation" || action === "addDonations") {
     let receiptUrl = "";
     if (data.receiptData) {
@@ -163,7 +179,7 @@ function processForm(data) {
     };
   }
 
-  // 5. تعديل سجل بواسطة الإدارة
+  // 6. تعديل سجل بواسطة الإدارة
   if (action === "editDonation") {
     const rowIndex = parseInt(data.rowIndex);
     if (rowIndex > 1) {
@@ -175,7 +191,7 @@ function processForm(data) {
     return { status: "error", message: "رقم الصف غير صحيح" };
   }
 
-  // 6. حذف سجل بواسطة الإدارة
+  // 7. حذف سجل بواسطة الإدارة
   if (action === "deleteDonation") {
     const rowIndex = parseInt(data.rowIndex);
     if (rowIndex > 1) {
@@ -185,7 +201,7 @@ function processForm(data) {
     return { status: "error", message: "رقم الصف غير صحيح" };
   }
 
-  // 7. إضافة مصروف
+  // 8. إضافة مصروف
   if (action === "addExpense") {
     expensesSheet.appendRow([new Date(), data.title, data.amount, data.phone]);
     const pdfUrl = generatePDFUrl(ss, "expenses");
@@ -197,9 +213,10 @@ function processForm(data) {
     };
   }
 
-  // 8. توليد كشف PDF المخصص للشيت الصحيح
+  // 9. توليد كشف PDF المخصص للشيت الصحيح
   if (action === "generatePDF" || action === "generateExpensesPDF") {
-    const pdfUrl = generatePDFUrl(ss, data.pdfType || "all");
+    const type = action === "generateExpensesPDF" ? "expenses" : (data.pdfType || "all");
+    const pdfUrl = generatePDFUrl(ss, type);
     return { status: "success", pdfDownloadUrl: pdfUrl };
   }
 
