@@ -21,7 +21,6 @@ function handleRequest(e) {
     data = (e && e.parameter) ? e.parameter : {};
   }
 
-  // إذا تم فتح الرابط مباشرة في المتصفح بدون برامترات
   if (!data || !data.action) {
     return ContentService.createTextOutput(JSON.stringify({
       status: "success",
@@ -198,7 +197,7 @@ function processForm(data) {
     };
   }
 
-  // 8. توليد كشف PDF
+  // 8. توليد كشف PDF المخصص للشيت الصحيح
   if (action === "generatePDF" || action === "generateExpensesPDF") {
     const pdfUrl = generatePDFUrl(ss, data.pdfType || "all");
     return { status: "success", pdfDownloadUrl: pdfUrl };
@@ -211,8 +210,17 @@ function generatePDFUrl(ss, type) {
   try {
     ss.setSharing(SpreadsheetApp.Access.ANYONE_WITH_LINK, SpreadsheetApp.Permission.VIEW);
   } catch(e) {}
+
+  let sheetId = "";
+  if (type === "expenses") {
+    const sheet = ss.getSheetByName("المصروفات");
+    if (sheet) sheetId = "&gid=" + sheet.getSheetId();
+  } else {
+    const sheet = ss.getSheetByName("التبرعات");
+    if (sheet) sheetId = "&gid=" + sheet.getSheetId();
+  }
   
   const url = ss.getUrl().replace(/edit$/, '') + 'export?exportFormat=pdf&format=pdf' +
-    '&size=letter&portrait=true&fitw=true&gridlines=true&printtitle=false&sheetnames=false&fzr=false';
+    '&size=letter&portrait=true&fitw=true&gridlines=true&printtitle=false&sheetnames=false&fzr=false' + sheetId;
   return url;
 }
