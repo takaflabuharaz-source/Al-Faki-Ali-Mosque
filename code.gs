@@ -14,11 +14,19 @@ function handleRequest(e) {
       data = JSON.parse(e.parameter.data);
     } else if (e && e.postData && e.postData.contents) {
       data = JSON.parse(e.postData.contents);
-    } else if (e && e.parameter) {
+    } else if (e && e.parameter && Object.keys(e.parameter).length > 0) {
       data = e.parameter;
     }
   } catch (err) {
     data = (e && e.parameter) ? e.parameter : {};
+  }
+
+  // إذا تم فتح الرابط مباشرة في المتصفح بدون برامترات
+  if (!data || !data.action) {
+    return ContentService.createTextOutput(JSON.stringify({
+      status: "success",
+      message: "API أسرة مجمع الفكي علي الشيخ حماد يعمل بنجاح!"
+    })).setMimeType(ContentService.MimeType.JSON);
   }
 
   const result = processForm(data);
@@ -44,6 +52,17 @@ function processForm(data) {
       }
     }
     usersSheet.appendRow([data.name, data.phone, data.password, "مستخدم"]);
+
+    donationsSheet.appendRow([
+      data.name,
+      data.phone,
+      "", 
+      0, 
+      "", 
+      "في الانتظار", 
+      new Date()
+    ]);
+
     return { status: "success", message: "تم إنشاء الحساب بنجاح! يمكنك الآن تسجيل الدخول." };
   }
 
@@ -60,8 +79,8 @@ function processForm(data) {
         const donationsData = donationsSheet.getDataRange().getValues();
         for (let j = 1; j < donationsData.length; j++) {
           if (donationsData[j][1].toString() === data.phone.toString()) {
-            currentAmount = donationsData[j][2];
-            if (donationsData[j][3] === "تم الدفع") {
+            currentAmount = donationsData[j][3] || 10000;
+            if (donationsData[j][5] === "تم الدفع") {
               isPaid = true;
             }
           }
@@ -80,25 +99,26 @@ function processForm(data) {
     return { status: "error", message: "رقم الهاتف أو كلمة المرور غير صحيحة!" };
   }
 
-  // 3. جلب قائمة التبرعات (معدل ليطابق شيت جوجل الخاص بك)
+  // 3. جلب قائمة التبرعات
   if (action === "getDonations") {
     const donationsData = donationsSheet.getDataRange().getValues();
     let list = [];
     for (let i = 1; i < donationsData.length; i++) {
       list.push({
-        name: donationsData[i][0],         // العمود A: الاسم
-        phone: donationsData[i][1],        // العمود B: رقم الهاتف
-        month: donationsData[i][2] || "",  // العمود C: الشهر
-        amount: donationsData[i][3],       // العمود D: المبلغ
-        receiptUrl: donationsData[i][4] || "", // العمود E: رابط الإشعار
-        status: donationsData[i][5]        // العمود F: الحالة
+        rowIndex: i + 1,
+        name: donationsData[i][0],
+        phone: donationsData[i][1],
+        month: donationsData[i][2] || "",
+        amount: donationsData[i][3] || 0,
+        receiptUrl: donationsData[i][4] || "",
+        status: donationsData[i][5] || "في الانتظار"
       });
     }
     return list;
   }
 
-  // 4. إضافة وتحديث تبرع (معدل ليطابق شيت جوجل الخاص بك)
-  if (action === "addDonations" || action === "addDonation") {
+  // 4. إضافة وتحديث تبرع
+  if (action === "addDonation" || action === "addDonations") {
     let receiptUrl = "";
     if (data.receiptData) {
       const folder = DriveApp.getRootFolder();
@@ -113,18 +133,17 @@ function processForm(data) {
 
     for (let i = 1; i < donationsData.length; i++) {
       if (donationsData[i][1].toString() === data.phone.toString()) {
-        donationsSheet.getRange(i + 1, 3).setValue(data.month || "أغسطس"); // العمود C: الشهر
-        donationsSheet.getRange(i + 1, 4).setValue(data.amount);            // العمود D: المبلغ
-        if (receiptUrl) donationsSheet.getRange(i + 1, 5).setValue(receiptUrl); // العمود E: رابط الإشعار
-        donationsSheet.getRange(i + 1, 6).setValue("تم الدفع");             // العمود F: الحالة
-        donationsSheet.getRange(i + 1, 7).setValue(new Date());              // العمود G: التاريخ
+        donationsSheet.getRange(i + 1, 3).setValue(data.month || "أغسطس");
+        donationsSheet.getRange(i + 1, 4).setValue(data.amount);
+        if (receiptUrl) donationsSheet.getRange(i + 1, 5).setValue(receiptUrl);
+        donationsSheet.getRange(i + 1, 6).setValue("تم الدفع");
+        donationsSheet.getRange(i + 1, 7).setValue(new Date());
         updated = true;
         break;
       }
     }
 
     if (!updated) {
-      // إدراج صف جديد بالترتيب الصحيح [A, B, C, D, E, F, G]
       donationsSheet.appendRow([
         data.userName, 
         data.phone, 
@@ -141,10 +160,33 @@ function processForm(data) {
       status: "success",
       message: "تم تسجيل التبرع بنجاح",
       pdfDownloadUrl: pdfUrl,
-      targetPhone: "249912345678"
+      targetPhone: data.phone
     };
   }
-  // 5. إضافة مصروف
+
+  // 5. تعديل سجل بواسطة الإدارة
+  if (action === "editDonation") {
+    const rowIndex = parseInt(data.rowIndex);
+    if (rowIndex > 1) {
+      if (data.name) donationsSheet.getRange(rowIndex, 1).setValue(data.name);
+      if (data.amount) donationsSheet.getRange(rowIndex, 4).setValue(data.amount);
+      if (data.status) donationsSheet.getRange(rowIndex, 6).setValue(data.status);
+      return { status: "success", message: "تم تعديل السجل بنجاح" };
+    }
+    return { status: "error", message: "رقم الصف غير صحيح" };
+  }
+
+  // 6. حذف سجل بواسطة الإدارة
+  if (action === "deleteDonation") {
+    const rowIndex = parseInt(data.rowIndex);
+    if (rowIndex > 1) {
+      donationsSheet.deleteRow(rowIndex);
+      return { status: "success", message: "تم حذف السجل بنجاح" };
+    }
+    return { status: "error", message: "رقم الصف غير صحيح" };
+  }
+
+  // 7. إضافة مصروف
   if (action === "addExpense") {
     expensesSheet.appendRow([new Date(), data.title, data.amount, data.phone]);
     const pdfUrl = generatePDFUrl(ss, "expenses");
@@ -152,13 +194,13 @@ function processForm(data) {
       status: "success",
       message: "تم تسجيل المصروف",
       pdfDownloadUrl: pdfUrl,
-      targetPhone: "249912345678"
+      targetPhone: data.phone
     };
   }
 
-  // 6. توليد كشف PDF
-  if (action === "generatePDF") {
-    const pdfUrl = generatePDFUrl(ss, data.pdfType);
+  // 8. توليد كشف PDF
+  if (action === "generatePDF" || action === "generateExpensesPDF") {
+    const pdfUrl = generatePDFUrl(ss, data.pdfType || "all");
     return { status: "success", pdfDownloadUrl: pdfUrl };
   }
 
@@ -166,6 +208,10 @@ function processForm(data) {
 }
 
 function generatePDFUrl(ss, type) {
+  try {
+    ss.setSharing(SpreadsheetApp.Access.ANYONE_WITH_LINK, SpreadsheetApp.Permission.VIEW);
+  } catch(e) {}
+  
   const url = ss.getUrl().replace(/edit$/, '') + 'export?exportFormat=pdf&format=pdf' +
     '&size=letter&portrait=true&fitw=true&gridlines=true&printtitle=false&sheetnames=false&fzr=false';
   return url;
