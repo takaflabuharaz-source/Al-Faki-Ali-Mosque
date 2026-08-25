@@ -48,7 +48,7 @@
       <img src="https://via.placeholder.com/120" alt="Logo" class="app-logo">
     </div>
     <h2>أسرة الفكي علي الشيخ حماد</h2>
-    <div class="sub-title">قال تعالى:﴿وَتَعَاوَنُوا عَلَى الْبِرِّ وَالتَّقْوَىٰ ۖ وَلَا تَعَاوَنُوا عَلَى الْإِثْمِ وَالْعُدْوَانِ﴾</div>
+    <div class="sub-title">قال تعالي: ﴿وَتَعَاوَنُوا عَلَى الْبِرِّ وَالتَّقْوَىٰ ۖ وَلَا تَعَاوَنُوا عَلَى الْإِثْمِ وَالْعُدْوَانِ﴾</div>
 
     <div class="orange-notice">
       تنبيه: سيتم إغلاق التبرعات بنهاية كل شهر ويتم احتساب المبلغ المتبرع به في الشهر الجديد وشكراً لتفهمكم.
@@ -90,9 +90,13 @@
       <!-- نموذج رفع الإشعار -->
       <div id="donationFormArea" class="card" style="background-color: #fafafa; border: 1px dashed #1e5631; margin-top:10px;">
         <h4>تسجيل / رفع إشعار التبرع</h4>
-        <label>المبلغ المستحق: <b>10000 SDG</b></label>
-        <input type="hidden" id="donAmount" value="10000">
+        
+        <label for="donAmount" style="font-weight: bold; display: block; margin-bottom: 4px;">مبلغ التبرع (ريال):</label>
+        <input type="number" id="donAmount" value="10000" min="1" placeholder="أدخل مبلغ التبرع">
+
+        <label for="donReceipt" style="font-weight: bold; display: block; margin-top: 8px; margin-bottom: 4px;">إشعار التحويل:</label>
         <input type="file" id="donReceipt" accept="image/*" required>
+        
         <button id="donBtn" onclick="submitDonation()">إرسال الإشعار والتأكيد</button>
       </div>
 
@@ -257,12 +261,11 @@
     async function loadDonations() {
       const res = await postData("getDonations");
       if (res && res.donations) {
-        // تحديث صندوق الإحصائيات
         const stats = res.stats;
         document.getElementById('statsBox').innerHTML = `
           📌 <b>إحصائيات الشهر الحالي:</b><br>
           • عدد المسددين: <b>${stats.paidCount} شخص</b><br>
-          • إجمالي المبلغ المالي المحصل: <b>${stats.totalPaidAmount.toLocaleString()} SDG</b><br>
+          • إجمالي المبلغ المالي المحصل: <b>${stats.totalPaidAmount.toLocaleString()} ريال</b><br>
           • عدد الذين لم يدفعوا بعد: <b>${stats.unpaidCount} شخص</b>
         `;
 
@@ -305,11 +308,17 @@
     }
 
     async function submitDonation() {
-      const amount = document.getElementById('donAmount').value;
+      const amountInput = document.getElementById('donAmount').value.trim();
+      const amount = amountInput ? Number(amountInput) : 10000;
       const fileInput = document.getElementById('donReceipt');
 
       if (!fileInput.files || fileInput.files.length === 0) {
         alert("يرجى إرفاق إشعار التبرع!");
+        return;
+      }
+
+      if (amount <= 0) {
+        alert("يرجى إدخال مبلغ تبرع صحيح!");
         return;
       }
 
@@ -322,7 +331,7 @@
         const res = await postData("addDonation", {
           userName: currentUser.userName,
           phone: currentUser.phone,
-          amount: amount || 10000,
+          amount: amount,
           receiptData: receiptData
         });
 
