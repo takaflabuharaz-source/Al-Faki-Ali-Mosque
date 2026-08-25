@@ -1,3 +1,6 @@
+// ضع مفتاح Google Cloud Vision API هنا
+const GOOGLE_VISION_API_KEY = "YOUR_GOOGLE_CLOUD_VISION_API_KEY";
+
 function doGet(e) {
   return handleRequest(e);
 }
@@ -33,7 +36,6 @@ function handleRequest(e) {
     .setMimeType(ContentService.MimeType.JSON);
 }
 
-// تحديد الشهر الحالي والتعامل مع التحول التلقائي للشهر الجديد
 function getCurrentDonationMonth() {
   const now = new Date();
   const day = now.getDate();
@@ -60,10 +62,22 @@ function processForm(data) {
   const action = data.action;
   const currentMonth = getCurrentDonationMonth();
 
-  // فحص وإعادة ضبط حالة الشهر الجديد تلقائياً
   checkAndResetMonthlyStatus(donationsSheet, currentMonth);
 
-  // 1. تسجيل حساب جديد
+  // 1. تحليل الصورة باستخدام Google Vision OCR
+  if (action === "scanReceipt") {
+    if (!data.receiptData) {
+      return { status: "error", message: "لم يتم إرسال الصورة للتحليل!" };
+    }
+    const detectedAmount = extractAmountFromImage(data.receiptData);
+    if (detectedAmount) {
+      return { status: "success", amount: detectedAmount };
+    } else {
+      return { status: "warning", message: "تعذر قراءة المبلغ تلقائياً من الإشعار، يرجى كتابته يدوياً." };
+    }
+  }
+
+  // 2. تسجيل حساب جديد
   if (action === "register") {
     const usersData = usersSheet.getDataRange().getValues();
     const cleanPhone = data.phone.toString().replace(/^0+/, '').trim();
@@ -79,7 +93,6 @@ function processForm(data) {
     
     usersSheet.appendRow([data.name, cleanPhone, data.password, "مستخدم"]);
 
-    // إضافة تلقائية لكشف التبرعات بمبلغ افتراضي 10000
     donationsSheet.appendRow([
       data.name,
       cleanPhone,
@@ -104,7 +117,7 @@ function processForm(data) {
     };
   }
 
-  // 2. تسجيل الدخول
+  // 3. تسجيل الدخول
   if (action === "login") {
     const usersData = usersSheet.getDataRange().getValues();
     const cleanPhone = data.phone.toString().replace(/^0+/, '').trim();
@@ -140,7 +153,7 @@ function processForm(data) {
     return { status: "error", message: "رقم الهاتف أو كلمة المرور غير صحيحة!" };
   }
 
-  // 3. جلب التبرعات والإحصائيات
+  // 4. جلب التبرعات والإحصائيات
   if (action === "getDonations") {
     const donationsData = donationsSheet.getDataRange().getValues();
     let list = [];
@@ -180,7 +193,7 @@ function processForm(data) {
     };
   }
 
-  // 4. رفع وتحديث الإشعار والمبلغ
+  // 5. رفع الإشعار والمبلغ
   if (action === "addDonation") {
     if (!data.receiptData) {
       return { status: "error", message: "إرفاق إشعار التبرع إجباري!" };
@@ -202,7 +215,7 @@ function processForm(data) {
     for (let i = 1; i < donationsData.length; i++) {
       if (donationsData[i][1].toString().trim() === cleanPhone) {
         donationsSheet.getRange(i + 1, 3).setValue(data.month || currentMonth);
-        donationsSheet.getRange(i + 1, 4).setValue(data.amount || 10000); // تحديث بالمبلغ الجديد
+        donationsSheet.getRange(i + 1, 4).setValue(data.amount || 10000);
         if (receiptUrl) donationsSheet.getRange(i + 1, 5).setValue(receiptUrl);
         donationsSheet.getRange(i + 1, 6).setValue("تم الدفع");
         donationsSheet.getRange(i + 1, 7).setValue(new Date());
@@ -226,7 +239,7 @@ function processForm(data) {
     return { status: "success", message: "تم تسجيل وتحديث التبرع بنجاح!" };
   }
 
-  // 5. جلب المصروفات
+  // 6. المصروفات والعمليات الأخرى
   if (action === "getExpenses") {
     const expensesData = expensesSheet.getDataRange().getValues();
     let list = [];
@@ -241,13 +254,11 @@ function processForm(data) {
     return list;
   }
 
-  // 6. إضافة مصروف
   if (action === "addExpense") {
     expensesSheet.appendRow([new Date(), data.title, data.amount, data.phone]);
     return { status: "success", message: "تم تسجيل المصروف بنجاح!" };
   }
 
-  // 7. تعديل سجل
   if (action === "editDonation") {
     const rowIndex = parseInt(data.rowIndex);
     if (rowIndex > 1) {
@@ -257,7 +268,6 @@ function processForm(data) {
     }
   }
 
-  // 8. حذف سجل
   if (action === "deleteDonation") {
     const rowIndex = parseInt(data.rowIndex);
     if (rowIndex > 1) {
@@ -266,13 +276,55 @@ function processForm(data) {
     }
   }
 
-  // 9. إنشاء رابط PDF
   if (action === "generatePDF") {
     const url = generatePDFUrl(ss, data.pdfType || "donations");
     return { status: "success", pdfDownloadUrl: url };
   }
 
   return { status: "error", message: "طلب غير معروف!" };
+}
+
+// دالة تحليل النصوص بالذكاء الاصطناعي باستخراج أرقام المبالغ
+function extractAmountFromImage(base64Image) {
+  if (GOOGLE_VISION_API_KEY === "YOUR_GOOGLE_CLOUD_VISION_API_KEY") return null;
+
+  try {
+    const url = "https://vision.googleapis.com/v1/images:annotate?key=" + GOOGLE_VISION_API_KEY;
+    const base64Data = base64Image.split(',')[1];
+
+    const payload = {
+      requests: [{
+        image: { content: base64Data },
+        features: [{ type: "TEXT_DETECTION" }]
+      }]
+    };
+
+    const options = {
+      method: "post",
+      contentType: "application/json",
+      payload: JSON.stringify(payload),
+      muteHttpExceptions: true
+    };
+
+    const response = UrlFetchApp.fetch(url, options);
+    const result = JSON.parse(response.getContentText());
+
+    if (result.responses && result.responses[0].fullTextAnnotation) {
+      const fullText = result.responses[0].fullTextAnnotation.text;
+      
+      // مطابقة صيغ المبالغ المالية مثل (10000, 10,000.00, 500 SAR, إلخ)
+      const matches = fullText.match(/(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?|\d+)/g);
+      if (matches) {
+        const numbers = matches.map(n => parseFloat(n.replace(/,/g, ''))).filter(n => n >= 100 && n <= 500000);
+        if (numbers.length > 0) {
+          return Math.max(...numbers); // استخراج المبلغ الأكبر المكتوب في الإشعار
+        }
+      }
+    }
+  } catch (e) {
+    Logger.log("OCR Error: " + e.toString());
+  }
+  return null;
 }
 
 function checkAndResetMonthlyStatus(donationsSheet, currentMonth) {
