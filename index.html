@@ -454,20 +454,21 @@ async function submitDonation() {
   reader.readAsDataURL(file);
 }
 
-function sendDonationToWhatsApp(donorName, donationAmount, donationDate, monthlyTotal) {
-  const phoneNumber = "966502658851";
+function sendDonationWhatsAppNotification(donorName, amount, donationDate, totalMonthlyAmount, phoneNumber = "") {
+    const message = `السلام عليكم ورحمة الله، إشعار تبرع جديد، اسم المتبرع: ${donorName}، المبلغ المتبرع به: ${amount}، تاريخ التبرع: ${donationDate}، الإجمالي المبالغ المتبرع بها لهذا الشهر: ${totalMonthlyAmount}، جعل الله في ميزان حسناتك`;
+    
+    const encodedMessage = encodeURIComponent(message);
+    let whatsappUrl = "";
 
-  const message = `السلام عليكم ورحمة الله\n` +
-                  `إشعار تبرع جديد\n` +
-                  `اسم المتبرع: ${donorName}\n` +
-                  `المبلغ المتبرع به: ${donationAmount}\n` +
-                  `تاريخ التبرع: ${donationDate}\n` +
-                  `اجمالي المبلغ الذي تم التبرع به لهذا الشهر: ${monthlyTotal}\n` +
-                  `جعلها الله في ميزان حسناتك`;
+    if (phoneNumber && phoneNumber.trim() !== "") {
+      const cleanPhone = phoneNumber.replace(/[^0-9]/g, '');
+      whatsappUrl = `https://wa.me/${cleanPhone}?text=${encodedMessage}`;
+    } else {
+      whatsappUrl = `https://wa.me/?text=${encodedMessage}`;
+    }
 
-  const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
-  window.open(whatsappUrl, '_blank');
-}
+    window.open(whatsappUrl, '_blank');
+  }
     async function downloadPDF(type) {
       alert("جاري تجهيز رابط الـ PDF...");
       const res = await postData("generatePDF", { pdfType: type });
@@ -556,17 +557,26 @@ function sendDonationToWhatsApp(donorName, donationAmount, donationDate, monthly
     navigator.serviceWorker.register('./sw.js');
   }
 
-  let deferredPrompt;
-  const installBtn = document.getElementById('installAppBtn');
+ let deferredPrompt;
+  const installAppBtn = document.getElementById('installAppBtn');
 
-  // 1. تسجيل الـ Service Worker
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('./sw.js')
-        .then(reg => console.log('Service Worker تم تسجيله بنجاح'))
-        .catch(err => console.error('فشل تسجيل Service Worker:', err));
-    });
-  }
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    installAppBtn.style.display = 'block';
+  });
+
+  installAppBtn.addEventListener('click', async () => {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      if (outcome === 'accepted') {
+        console.log('User accepted the install prompt');
+      }
+      deferredPrompt = null;
+      installAppBtn.style.display = 'none';
+    }
+  });
 
   // 2. التقاط حدث التثبيت وإظهار الزر
   window.addEventListener('beforeinstallprompt', (e) => {
