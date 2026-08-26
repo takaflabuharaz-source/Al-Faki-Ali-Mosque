@@ -435,6 +435,30 @@
 
       reader.readAsDataURL(file);
     }
+    function submitDonation() {
+        // ضع قيم المدخلات أو اسحبها من عناصر الصفحة
+        const donorName = document.getElementById('donorNameInput')?.value || "فاعل خير";
+        const donationAmount = document.getElementById('amountInput')?.value || "0";
+        const donationDate = new Date().toLocaleDateString('ar-SA');
+        const monthlyTotal = "0"; // يمكنك دمجها مع إجمالي الشهر لديك
+
+        sendDonationToWhatsApp(donorName, donationAmount, donationDate, monthlyTotal);
+    }
+
+    function sendDonationToWhatsApp(donorName, donationAmount, donationDate, monthlyTotal) {
+        const phoneNumber = "966501234567"; // رقم الهاتف المخصص لتلقي الإشعارات
+
+        const message = `السلام عليكم ورحمة الله\n` +
+                        `إشعار تبرع جديد\n` +
+                        `اسم المتبرع: ${donorName}\n` +
+                        `المبلغ المتبرع به: ${donationAmount}\n` +
+                        `تاريخ التبرع: ${donationDate}\n` +
+                        `اجمالي المبلغ الذي تم التبرع به لهذا الشهر: ${monthlyTotal}\n` +
+                        `جعلها الله في ميزان حسناتك`;
+
+        const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
+        window.open(whatsappUrl, '_blank');
+    }
 
     async function downloadPDF(type) {
       alert("جاري تجهيز رابط الـ PDF...");
