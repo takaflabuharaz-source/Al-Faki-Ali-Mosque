@@ -393,73 +393,81 @@
       }
     }
 
-    async function submitDonation() {
-      const amountInput = document.getElementById('donAmount').value.trim();
-      const amount = amountInput ? Number(amountInput) : 10000;
-      const fileInput = document.getElementById('donReceipt');
+async function submitDonation() {
+  const amountInput = document.getElementById('donAmount').value.trim();
+  const amount = amountInput ? Number(amountInput) : 10000;
+  const fileInput = document.getElementById('donReceipt');
 
-      if (!fileInput.files || fileInput.files.length === 0) {
-        alert("يرجى إرفاق إشعار التبرع!");
-        return;
+  if (!fileInput.files || fileInput.files.length === 0) {
+    alert("يرجى إرفاق إشعار التبرع!");
+    return;
+  }
+
+  if (amount <= 0) {
+    alert("يرجى إدخال مبلغ تبرع صحيح!");
+    return;
+  }
+
+  setBtnLoading('donBtn', true, 'إرسال الإشعار والتأكيد', 'جاري الإرسال...');
+  const file = fileInput.files[0];
+  const reader = new FileReader();
+
+  reader.onload = async function(e) {
+    const receiptData = e.target.result;
+    
+    // إرسال البيانات للتخزين
+    const res = await postData("addDonation", {
+      userName: currentUser.userName,
+      phone: currentUser.phone,
+      amount: amount,
+      receiptData: receiptData
+    });
+
+    setBtnLoading('donBtn', false, 'إرسال الإشعار والتأكيد', 'جاري الإرسال...');
+
+    if (res.status === "success") {
+      alert(res.message);
+
+      // 1. جلب اسم المتبرع من كائن المستخدم الحالي (أو من حقل المدخلات)
+      const donorName = currentUser.userName || "فاعل خير";
+
+      // 2. جلب التاريخ المباشر
+      const donationDate = new Date().toLocaleDateString('ar-SA');
+
+      // 3. جلب إجمالي الشهر من الاستجابة أو من عنصر في الصفحة
+      const monthlyTotal = res.monthlyTotal || document.getElementById('monthlyTotal')?.innerText || "غير محدد";
+
+      // 4. إرسال الرسالة إلى الواتساب
+      sendDonationToWhatsApp(donorName, amount, donationDate, monthlyTotal);
+
+      // إعادة تصفير الحقول
+      fileInput.value = '';
+      if (document.getElementById('ocrStatus')) {
+        document.getElementById('ocrStatus').innerText = '';
       }
-
-      if (amount <= 0) {
-        alert("يرجى إدخال مبلغ تبرع صحيح!");
-        return;
-      }
-
-      setBtnLoading('donBtn', true, 'إرسال الإشعار والتأكيد', 'جاري الإرسال...');
-      const file = fileInput.files[0];
-      const reader = new FileReader();
-
-      reader.onload = async function(e) {
-        const receiptData = e.target.result;
-        const res = await postData("addDonation", {
-          userName: currentUser.userName,
-          phone: currentUser.phone,
-          amount: amount,
-          receiptData: receiptData
-        });
-
-        setBtnLoading('donBtn', false, 'إرسال الإشعار والتأكيد', 'جاري الإرسال...');
-
-        if (res.status === "success") {
-          alert(res.message);
-          fileInput.value = '';
-          document.getElementById('ocrStatus').innerText = '';
-          loadDonations();
-        } else {
-          alert(res.message);
-        }
-      };
-
-      reader.readAsDataURL(file);
+      loadDonations();
+    } else {
+      alert(res.message);
     }
-    function submitDonation() {
-        // ضع قيم المدخلات أو اسحبها من عناصر الصفحة
-        const donorName = document.getElementById('donorNameInput')?.value || "فاعل خير";
-        const donationAmount = document.getElementById('amountInput')?.value || "0";
-        const donationDate = new Date().toLocaleDateString('ar-SA');
-        const monthlyTotal = "0"; // يمكنك دمجها مع إجمالي الشهر لديك
+  };
 
-        sendDonationToWhatsApp(donorName, donationAmount, donationDate, monthlyTotal);
-    }
+  reader.readAsDataURL(file);
+}
 
-    function sendDonationToWhatsApp(donorName, donationAmount, donationDate, monthlyTotal) {
-        const phoneNumber = "966502658851"; // رقم الهاتف المخصص لتلقي الإشعارات
+function sendDonationToWhatsApp(donorName, donationAmount, donationDate, monthlyTotal) {
+  const phoneNumber = "966502658851";
 
-        const message = `السلام عليكم ورحمة الله\n` +
-                        `إشعار تبرع جديد\n` +
-                        `اسم المتبرع: ${donorName}\n` +
-                        `المبلغ المتبرع به: ${donationAmount}\n` +
-                        `تاريخ التبرع: ${donationDate}\n` +
-                        `اجمالي المبلغ الذي تم التبرع به لهذا الشهر: ${monthlyTotal}\n` +
-                        `جعلها الله في ميزان حسناتك`;
+  const message = `السلام عليكم ورحمة الله\n` +
+                  `إشعار تبرع جديد\n` +
+                  `اسم المتبرع: ${donorName}\n` +
+                  `المبلغ المتبرع به: ${donationAmount}\n` +
+                  `تاريخ التبرع: ${donationDate}\n` +
+                  `اجمالي المبلغ الذي تم التبرع به لهذا الشهر: ${monthlyTotal}\n` +
+                  `جعلها الله في ميزان حسناتك`;
 
-        const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
-        window.open(whatsappUrl, '_blank');
-    }
-
+  const whatsappUrl = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
+  window.open(whatsappUrl, '_blank');
+}
     async function downloadPDF(type) {
       alert("جاري تجهيز رابط الـ PDF...");
       const res = await postData("generatePDF", { pdfType: type });
