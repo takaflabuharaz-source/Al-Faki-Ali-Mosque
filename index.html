@@ -4,7 +4,11 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>تطبيق مجمع الفكي علي الشيخ حماد</title>
-
+  
+<!-- زر تثبيت التطبيق (يكون مخفياً بشكل افتراضي) -->
+<button id="installAppBtn" style="display: none; background-color: #2d6a4f; color: white; border: none; padding: 10px 18px; border-radius: 8px; font-size: 15px; cursor: pointer; font-family: inherit;">
+  📲 تثبيت التطبيق
+</button>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#2d6a4f">
   <!-- استدعاء مكتبة OCR المجانية بالكامل -->
@@ -519,6 +523,50 @@
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('./sw.js');
   }
+
+  let deferredPrompt;
+  const installBtn = document.getElementById('installAppBtn');
+
+  // 1. تسجيل الـ Service Worker
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./sw.js')
+        .then(reg => console.log('Service Worker تم تسجيله بنجاح'))
+        .catch(err => console.error('فشل تسجيل Service Worker:', err));
+    });
+  }
+
+  // 2. التقاط حدث التثبيت وإظهار الزر
+  window.addEventListener('beforeinstallprompt', (e) => {
+    // منع النافذة المنبثقة الافتراضية
+    e.preventDefault();
+    deferredPrompt = e;
+    
+    // إظهار زر التثبيت للمستخدم
+    installBtn.style.display = 'inline-block';
+  });
+
+  // 3. عند ضغط المستخدم على زر التثبيت
+  installBtn.addEventListener('click', async () => {
+    if (!deferredPrompt) return;
+    
+    // إظهار نافذة التثبيت للعميل
+    deferredPrompt.prompt();
+    
+    // الانتظار لمعرفة قرار المستخدم
+    const { outcome } = await deferredPrompt.userChoice;
+    console.log(`User choice: ${outcome}`);
+    
+    // إعادة إخفاء الزر وتصفير المتغير
+    deferredPrompt = null;
+    installBtn.style.display = 'none';
+  });
+
+  // 4. إخفاء الزر فور اكتمال التثبيت بنجاح
+  window.addEventListener('appinstalled', () => {
+    console.log('تم تثبيت التطبيق بنجاح!');
+    installBtn.style.display = 'none';
+  });
   </script>
 </body>
 </html>
