@@ -571,24 +571,28 @@ function sendWhatsAppNotification() {
     navigator.serviceWorker.register('./sw.js');
   }
 
- let deferredPrompt;
-  const installAppBtn = document.getElementById('installAppBtn');
+let deferredPrompt;
+  const installBtn = document.getElementById('installBtn');
 
   window.addEventListener('beforeinstallprompt', (e) => {
+    // منع المتصفح من إظهار التثبيت التلقائي
     e.preventDefault();
+    // حفظ الحدث لاستخدامه عند الضغط على الزر
     deferredPrompt = e;
-    installAppBtn.style.display = 'block';
+    // إظهار زر التثبيت للمستخدم
+    installBtn.style.display = 'block';
   });
 
-  installAppBtn.addEventListener('click', async () => {
+  installBtn.addEventListener('click', async () => {
     if (deferredPrompt) {
+      // إظهار نافذة التثبيت
       deferredPrompt.prompt();
       const { outcome } = await deferredPrompt.userChoice;
       if (outcome === 'accepted') {
-        console.log('User accepted the install prompt');
+        console.log('تم قبول تثبيت التطبيق');
       }
       deferredPrompt = null;
-      installAppBtn.style.display = 'none';
+      installBtn.style.display = 'none';
     }
   });
 
