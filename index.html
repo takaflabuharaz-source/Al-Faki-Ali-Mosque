@@ -235,34 +235,43 @@
       }
     }
 
-    async function scanReceiptLocalOCR() {
-      const fileInput = document.getElementById('donReceipt');
-      const statusLabel = document.getElementById('ocrStatus');
+  async function scanReceiptLocalOCR() {
+  const fileInput = document.getElementById('donReceipt');
+  const statusLabel = document.getElementById('ocrStatus');
 
-      if (!fileInput.files || fileInput.files.length === 0) return;
+  if (!fileInput.files || fileInput.files.length === 0) return;
 
-      statusLabel.innerText = "⏳ جاري فحص الصورة محلياً واستخراج المبلغ...";
+  statusLabel.innerText = "⏳ جاري فحص الصورة واستخراج المبلغ...";
 
-      try {
-        const file = fileInput.files[0];
-        const result = await Tesseract.recognize(file, 'ara+eng');
-        const text = result.data.text;
-        
-        const matches = text.match(/(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?|\d+)/g);
-        if (matches) {
-          const numbers = matches.map(n => parseFloat(n.replace(/,/g, ''))).filter(n => n >= 50 && n <= 500000);
-          if (numbers.length > 0) {
-            const maxAmount = Math.max(...numbers);
-            document.getElementById('donAmount').value = maxAmount;
-            statusLabel.innerText = "✅ تم التعرف على المبلغ تلقائياً: " + maxAmount + " SDG";
-            return;
-          }
-        }
-        statusLabel.innerText = "⚠️ تعذر القراءة التلقائية للمبلغ، يرجى كتابته يدوياً.";
-      } catch (err) {
-        statusLabel.innerText = "⚠️ يرجى التأكد من كتابة المبلغ يدوياً.";
+  try {
+    const file = fileInput.files[0];
+    
+    // 1. دعم اللغة العربية والإنجليزية معاً لقراءة النصوص والأرقام بكافة أشكالها
+    const result = await Tesseract.recognize(file, 'ara+eng');
+    let text = result.data.text;
+    
+    // 2. تحويل الأرقام العربية الشرقية (٠١٢٣٤٥٦٧٨٩) إلى أرقام إنجليزية (0123456789)
+    text = text.replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d));
+
+    // 3. استخراج أرقام المبالغ المالية
+    const matches = text.match(/(\d{1,3}(?:,\d{3})*(?:\.\d{1,2})?|\d+)/g);
+    if (matches) {
+      const numbers = matches
+        .map(n => parseFloat(n.replace(/,/g, '')))
+        .filter(n => n >= 50 && n <= 1000000); // نطاق المبالغ المسموحة
+
+      if (numbers.length > 0) {
+        const maxAmount = Math.max(...numbers);
+        document.getElementById('donAmount').value = maxAmount;
+        statusLabel.innerText = "✅ تم التعرف على المبلغ تلقائياً: " + maxAmount + " SDG";
+        return;
       }
     }
+    statusLabel.innerText = "⚠️ تعذر القراءة التلقائية للمبلغ، يرجى كتابته يدوياً.";
+  } catch (err) {
+    statusLabel.innerText = "⚠️ يرجى التأكد من كتابة المبلغ يدوياً.";
+  }
+}
 
     async function register() {
       const name = document.getElementById('regName').value.trim();
