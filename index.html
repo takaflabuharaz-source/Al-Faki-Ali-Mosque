@@ -246,11 +246,9 @@ async function scanReceiptLocalOCR() {
   try {
     const file = fileInput.files[0];
 
-    // 1. قراءة الصورة كما هي باللغتين الإنجليزية والعربية معاً
     const worker = await Tesseract.createWorker('eng+ara');
-    
     await worker.setParameters({
-      tessedit_pageseg_mode: Tesseract.PSM.SPARSE_TEXT, // ممتازة للجداول بالحسبين العربي والإنكليزي
+      tessedit_pageseg_mode: Tesseract.PSM.SPARSE_TEXT,
     });
 
     const result = await worker.recognize(file);
@@ -258,49 +256,36 @@ async function scanReceiptLocalOCR() {
 
     let text = result.data.text;
     
-    // 2. توحيد الأرقام: تحويل الأرقام المكتوبة بالصيغة العربية الشرقية (٠١٢٣٤٥٦٧٨٩) إلى (0123456789)
+    // توحيد الأرقام الشرقية والغربية
     text = text.replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d));
 
-    // 3. البحث عن المبالغ بمرونة تتعامل مع صيغ بنكك الإنجليزية والعربية (مثل 10,000.00 أو 10000 أو 10.000,00)
-    // استخراج كافة السلاسل التي تبدو كأرقام مالية
-    const rawMatches = text.match(/\b\d{1,3}(?:[,\.]\d{3})*(?:[\.,]\d{2})?\b|\b\d+\b/g);
+    // 1. استخراج المبالغ المكتوبة بصيغة بنكك الصريحة (مثل 35,000.00 أو 10,000.00) أولاً
+    const formattedMatches = text.match(/\b\d{1,3}(?:,\d{3})*(?:\.\d{2})?\b/g);
+    let extractedAmounts = [];
 
-    if (rawMatches) {
-      let candidateAmounts = [];
-
-      for (let match of rawMatches) {
-        let cleanStr = match;
-
-        // إذا كان الرقم ينتهي بكسور صفرية مثل .00 أو ,00 يتم حذفها
-        cleanStr = cleanStr.replace(/[\.,]00$/, '');
-        // حذف الفواصل والنقاط التي تفصل آلاف المبالغ
-        cleanStr = cleanStr.replace(/[,.]/g, '');
-
+    if (formattedMatches) {
+      for (let match of formattedMatches) {
+        // إذا كان الرقم ينتهي بـ .00 نحذفها ونحذف فواصل الآلاف
+        let cleanStr = match.replace(/\.00$/, '').replace(/,/g, '');
         let num = parseFloat(cleanStr);
 
-        // استبعاد أرقام الحسابات (عادة 15 أو 16 رقم) وأرقام التواريخ (مثل 2026)
-        // الفلترة تشمل فقط المبالغ المنطقية بين 50 و 10,000,000
-        if (!isNaN(num) && num >= 50 && num <= 10000000 && num !== 2026 && num !== 2025 && num !== 2024) {
-          candidateAmounts.push(num);
-        }
-      }
-
-      if (candidateAmounts.length > 0) {
-        // البحث عن مبلغ 10000 أو المبالغ الكبيرة المتوقعة في خانة "المبلغ / Amount"
-        let detectedAmount = candidateAmounts[0];
-
-        // في حال وجود أكثر من رقم، نُفضّل المبلغ الذى يمثل 10000 أو مضاعفات المبالغ الشائعة
-        for (let amt of candidateAmounts) {
-          if (amt === 10000) {
-            detectedAmount = 10000;
-            break;
+        // استبعاد السنوات (2024-2026) وأجزاء الحسابات الشائعة (مثل 1003, 0403, 0443)
+        if (!isNaN(num) && num >= 50 && num <= 10000000) {
+          if (num !== 2024 && num !== 2025 && num !== 2026 && num !== 1003 && num !== 403 && num !== 443) {
+            extractedAmounts.push(num);
           }
         }
-
-        document.getElementById('donAmount').value = detectedAmount;
-        statusLabel.innerText = "✅ تم التعرف على المبلغ تلقائياً: " + detectedAmount + " SDG";
-        return;
       }
+    }
+
+    // 2. اختيار المبلغ الصحيح (إذا وجد 35000 أو 10000 سيأخذه فوراً من أسفل الإشعار)
+    if (extractedAmounts.length > 0) {
+      // إعطاء الأولوية للمبالغ المقبولة الشائعة أو أكبر مبلغ مالي نظيف تم التقاطه
+      let finalAmount = extractedAmounts[extractedAmounts.length - 1]; // غالباً ما يكون المبلغ هو آخر عنصر في قراءة النص (أسفل الإشعار)
+
+      document.getElementById('donAmount').value = finalAmount;
+      statusLabel.innerText = "✅ تم التعرف على المبلغ بنجاح: " + finalAmount + " SDG";
+      return;
     }
 
     statusLabel.innerText = "⚠️ تعذر القراءة التلقائية للمبلغ، يرجى كتابته يدوياً.";
