@@ -457,67 +457,88 @@ function preprocessBankakReceipt(file) {
     }
 
     // إرسال البيانات وحفظها مع فتح الواتساب للإشعار
-    async function submitDonation() {
-      const amountInput = document.getElementById('donAmount').value.trim();
-      const amount = amountInput ? Number(amountInput) : 10000;
-      const fileInput = document.getElementById('donReceipt');
-      const donorName = currentUser ? (currentUser.userName || currentUser.name) : 'متبرع';
-      const today = new Date().toISOString().split('T')[0];
+   async function submitDonation() {
+  const amountInput = document.getElementById('donAmount').value.trim();
+  const amount = amountInput ? Number(amountInput) : 10000;
+  const fileInput = document.getElementById('donReceipt');
+  const donorName = currentUser ? (currentUser.userName || currentUser.name) : 'متبرع';
+  const userPhone = currentUser ? currentUser.phone : '';
+  const today = new Date().toISOString().split('T')[0];
 
-      if (amount <= 0) {
-        alert("يرجى إدخال مبلغ تبرع صحيح!");
-        return;
-      }
+  if (amount <= 0) {
+    alert("يرجى إدخال مبلغ تبرع صحيح!");
+    return;
+  }
 
-      setBtnLoading('donBtn', true, 'إرسال الإشعار والتأكيد عبر الواتساب', 'جاري معالجة الإشعار...');
+  setBtnLoading('donBtn', true, 'إرسال الإشعار والتأكيد عبر الواتساب', 'جاري معالجة الإشعار...');
 
-      // تكوين نص رسالة الواتساب
-      const message = `السلام عليكم ورحمة الله،\n` +
-                      `اشعار تبرع جديد\n` +
-                      `اسم المتبرع: ${donorName}\n` +
-                      `مبلغ التبرع: ${amount} SDG\n` +
-                      `تاريخ التبرع: ${today}\n` +
-                      `جعلها الله في ميزان حسناتك`;
+  const message = `السلام عليكم ورحمة الله،\n` +
+                  `إشعار تبرع جديد\n` +
+                  `اسم المتبرع: ${donorName}\n` +
+                  `مبلغ التبرع: ${amount} SDG\n` +
+                  `تاريخ التبرع: ${today}\n` +
+                  `جعلها الله في ميزان حسناتكم`;
 
-      const whatsappNumber = "966502658851"; // ضع الرقم المعني هنا بالمفتاح الدولي
-      const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
+  const whatsappNumber = "966502658851"; 
+  const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`;
 
-      // إن وجد ملف مرفق، نقوم برفعه للنظام أولاً
-      if (fileInput.files && fileInput.files.length > 0) {
-        const file = fileInput.files[0];
-        const reader = new FileReader();
+  const processAndSend = async (receiptBase64) => {
+    const res = await postData("addDonation", {
+      userName: donorName,
+      phone: userPhone,
+      amount: amount,
+      receiptData: receiptBase64
+    });
 
-        reader.onload = async function(e) {
-          const receiptData = e.target.result;
-          await postData("addDonation", {
-            userName: donorName,
-            phone: currentUser.phone,
-            amount: amount,
-            receiptData: receiptData
-          });
+    setBtnLoading('donBtn', false, 'إرسال الإشعار والتأكيد عبر الواتساب', 'جاري معالجة الإشعار...');
+    fileInput.value = '';
+    document.getElementById('ocrStatus').innerText = '';
+    loadDonations();
+    window.open(whatsappUrl, '_blank');
+  };
 
-          setBtnLoading('donBtn', false, 'إرسال الإشعار والتأكيد عبر الواتساب', 'جاري معالجة الإشعار...');
-          fileInput.value = '';
-          document.getElementById('ocrStatus').innerText = '';
-          loadDonations();
-          window.open(whatsappUrl, '_blank');
-        };
+  if (fileInput.files && fileInput.files.length > 0) {
+    const file = fileInput.files[0];
+    const reader = new FileReader();
 
-        reader.readAsDataURL(file);
-      } else {
-        // التسجيل بدون ملف مرفق إن لزم الأمر
-        await postData("addDonation", {
-          userName: donorName,
-          phone: currentUser ? currentUser.phone : '',
-          amount: amount,
-          receiptData: null
-        });
+    reader.onload = function(e) {
+      // ضغط الصورة وتقليل حجمها لضمان إرسالها دون انقطاع
+      const img = new Image();
+      img.onload = function() {
+        const canvas = document.createElement('canvas');
+        const maxDimension = 1000; // تقليل الأبعاد القصوى إلى 1000px
+        let width = img.width;
+        let height = img.height;
 
-        setBtnLoading('donBtn', false, 'إرسال الإشعار والتأكيد عبر الواتساب', 'جاري معالجة الإشعار...');
-        loadDonations();
-        window.open(whatsappUrl, '_blank');
-      }
-    }
+        if (width > height) {
+          if (width > maxDimension) {
+            height *= maxDimension / width;
+            width = maxDimension;
+          }
+        } else {
+          if (height > maxDimension) {
+            width *= maxDimension / height;
+            height = maxDimension;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+
+        const compressedBase64 = canvas.toDataURL('image/jpeg', 0.7); // ضغط الصورة بجودة 70%
+        processAndSend(compressedBase64);
+      };
+      img.src = e.target.result;
+    };
+
+    reader.readAsDataURL(file);
+  } else {
+    await processAndSend(null);
+  }
+}
+
 
     async function downloadPDF(type) {
       alert("جاري تجهيز رابط الـ PDF...");
