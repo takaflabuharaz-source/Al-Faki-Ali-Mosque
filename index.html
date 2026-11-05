@@ -11,6 +11,8 @@
   <!-- مكتبة Tesseract.js لقراءة الإشعارات تلقائياً -->
   <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
   <style>
     body { 
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
@@ -718,16 +720,55 @@
       }
     }
 
-    async function downloadPDF(type) {
-      alert("جاري تجهيز وتصدير ملف الـ PDF...");
-      const res = await postData("generatePDF", { pdfType: type });
-      if (res.pdfDownloadUrl) {
-        window.open(res.pdfDownloadUrl, '_blank');
-      } else {
-        alert("تعذر إنشاء ملف PDF!");
-      }
-    }
+   function downloadPDF(type) {
+      let elementId = 'donationsTableContainer';
+      let fileName = 'كشف_التبرعات_العام.pdf';
 
+      if (type === 'paid') {
+        elementId = 'paidTableContainer';
+        fileName = 'قائمة_المتبرعين.pdf';
+      } else if (type === 'unpaid') {
+        elementId = 'unpaidTableContainer';
+        fileName = 'قائمة_الانتظار.pdf';
+      } else if (type === 'expenses') {
+        elementId = 'expensesTableContainer';
+        fileName = 'سجل_المصاريف.pdf';
+      } else if (type === 'prevMonths') {
+        elementId = 'historyTableContainer';
+        fileName = 'أرشيف_الشهور_السابقة.pdf';
+      }
+
+      const targetElement = document.getElementById(elementId);
+      if (!targetElement || targetElement.innerHTML.trim() === "") {
+        alert("لا توجد بيانات لتنزيلها حالياً!");
+        return;
+      }
+
+      // إضافة عنوان ترويسة احترافي مخصص لملف الـ PDF المطابق لشاشة الطباعة
+      const wrapper = document.createElement('div');
+      wrapper.style.direction = 'rtl';
+      wrapper.style.padding = '20px';
+      wrapper.style.fontFamily = 'Segoe UI, Tahoma, Geneva, Verdana, sans-serif';
+      
+      const headerTitle = document.createElement('h3');
+      headerTitle.style.textAlign = 'center';
+      headerTitle.style.color = '#1e5631';
+      headerTitle.innerText = 'أسرة الفكي علي الشيخ حماد - ' + fileName.replace('.pdf', '').replace(/_/g, ' ');
+      
+      wrapper.appendChild(headerTitle);
+      wrapper.appendChild(targetElement.cloneNode(true));
+
+      const opt = {
+        margin:       10,
+        filename:     fileName,
+        image:        { type: 'jpeg', quality: 0.98 },
+        html2canvas:  { scale: 2, useCORS: true },
+        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+      };
+
+      alert("جاري إنشاء وتنزيل ملف الـ PDF بتنسيق الجدول المنظم...");
+      html2pdf().from(wrapper).set(opt).save();
+    }
     async function addExpense() {
       const title = document.getElementById('expTitle').value.trim();
       const amount = document.getElementById('expAmount').value.trim();
