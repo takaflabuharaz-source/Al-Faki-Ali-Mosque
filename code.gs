@@ -8,7 +8,6 @@ function doPost(e) {
 
 function handleRequest(e) {
   let data = {};
-  
   try {
     if (e && e.parameter && e.parameter.data) {
       data = JSON.parse(e.parameter.data);
@@ -52,6 +51,12 @@ function getCurrentDonationMonth() {
 
 function processForm(data) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
+  
+  // منح إذن الوصول العام تلقائياً لمنع ظهور خطأ رفض الوصول عند تصدير الـ PDF
+  try {
+    ss.setSharing(SpreadsheetApp.Access.ANYONE_WITH_LINK, SpreadsheetApp.Permission.VIEW);
+  } catch(e) {}
+
   const usersSheet = ss.getSheetByName("المستخدمين") || ss.insertSheet("المستخدمين");
   const donationsSheet = ss.getSheetByName("التبرعات") || ss.insertSheet("التبرعات");
   const expensesSheet = ss.getSheetByName("المصروفات") || ss.insertSheet("المصروفات");
@@ -137,7 +142,7 @@ function processForm(data) {
     return { status: "error", message: "رقم الهاتف أو كلمة المرور غير صحيحة!" };
   }
 
-  // 3. جلب التبرعات والإحصائيات
+  // 3. جلب التبرعات
   if (action === "getDonations") {
     const donationsData = donationsSheet.getDataRange().getValues();
     let list = [];
@@ -177,26 +182,22 @@ function processForm(data) {
     };
   }
 
- // 4. رفع الإشعار والمبلغ
+  // 4. رفع الإشعار
   if (action === "addDonation") {
     let receiptUrl = "";
-    
-    // معالجة صورة الإشعار إن وجدت بشكل آمن
     if (data.receiptData && data.receiptData.indexOf("data:image") !== -1) {
       try {
         const folder = DriveApp.getRootFolder();
         const base64Parts = data.receiptData.split(',');
         const mimeMatch = base64Parts[0].match(/:(.*?);/);
-        const mimeType = mimeMatch ? mimeMatch[1] : "image/png";
+        const mimeType = mimeMatch ? mimeMatch[1] : "image/jpeg";
         const bytes = Utilities.base64Decode(base64Parts[1]);
         const blob = Utilities.newBlob(bytes, mimeType, "receipt_" + (data.phone || "user") + "_" + new Date().getTime());
-        
         const file = folder.createFile(blob);
         file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
         receiptUrl = file.getUrl();
       } catch (err) {
-        // في حال حدوث خطأ أثناء فك تشفير الصورة، نضع ملاحظة دون إيقاف تسجيل التبرع
-        receiptUrl = "خطأ في رفع الملف";
+        receiptUrl = "";
       }
     }
 
@@ -206,7 +207,7 @@ function processForm(data) {
 
     for (let i = 1; i < donationsData.length; i++) {
       if (cleanPhone && donationsData[i][1].toString().trim() === cleanPhone) {
-        donationsSheet.getRange(i + 1, 3).setValue(data.month || currentMonth);
+        donationsSheet.getRange(i + 1, 3).setValue(currentMonth);
         donationsSheet.getRange(i + 1, 4).setValue(Number(data.amount) || 10000);
         if (receiptUrl) donationsSheet.getRange(i + 1, 5).setValue(receiptUrl);
         donationsSheet.getRange(i + 1, 6).setValue("تم الدفع");
@@ -220,7 +221,7 @@ function processForm(data) {
       donationsSheet.appendRow([
         data.userName || "متبرع", 
         cleanPhone, 
-        data.month || currentMonth, 
+        currentMonth, 
         Number(data.amount) || 10000, 
         receiptUrl, 
         "تم الدفع", 
@@ -231,7 +232,7 @@ function processForm(data) {
     return { status: "success", message: "تم تسجيل وتحديث التبرع بنجاح!" };
   }
 
-  // 5. المصروفات والعمليات الأخرى
+  // 5. المصروفات
   if (action === "getExpenses") {
     const expensesData = expensesSheet.getDataRange().getValues();
     let list = [];
@@ -247,8 +248,24 @@ function processForm(data) {
   }
 
   if (action === "addExpense") {
-    expensesSheet.appendRow([new Date(), data.title, data.amount, data.phone]);
+    expensesSheet.appendRow([new Date(), data.title, Number(data.amount) || 0, data.phone]);
     return { status: "success", message: "تم تسجيل المصروف بنجاح!" };
+  }
+
+  // 6. الشهور السابقة (الأرشيف)
+  if (action === "getPrevMonths") {
+    const archiveSheet = ss.getSheetByName("أرشيف_التبرعات") || ss.insertSheet("أرشيف_التبرعات");
+    const archiveData = archiveSheet.getDataRange().getValues();
+    let archiveList = [];
+    for (let i = 1; i < archiveData.length; i++) {
+      archiveList.push({
+        name: archiveData[i][0],
+        month: archiveData[i][2],
+        amount: archiveData[i][3],
+        status: archiveData[i][5] || "تم الدفع"
+      });
+    }
+    return { archive: archiveList };
   }
 
   if (action === "editDonation") {
@@ -282,7 +299,11 @@ function checkAndResetMonthlyStatus(donationsSheet, currentMonth) {
 
   const firstRecordMonth = data[1][2];
   if (firstRecordMonth && firstRecordMonth !== currentMonth) {
+    const ss = donationsSheet.getParent();
+    const archiveSheet = ss.getSheetByName("أرشيف_التبرعات") || ss.insertSheet("أرشيف_التبرعات");
+    
     for (let i = 1; i < data.length; i++) {
+      archiveSheet.appendRow([data[i][0], data[i][1], data[i][2], data[i][3], data[i][4], data[i][5], data[i][6]]);
       donationsSheet.getRange(i + 1, 3).setValue(currentMonth);
       donationsSheet.getRange(i + 1, 5).setValue("");
       donationsSheet.getRange(i + 1, 6).setValue("في الانتظار");
@@ -295,14 +316,15 @@ function generatePDFUrl(ss, type) {
     ss.setSharing(SpreadsheetApp.Access.ANYONE_WITH_LINK, SpreadsheetApp.Permission.VIEW);
   } catch(e) {}
 
-  let sheetId = "";
+  let sheetName = "التبرعات";
   if (type === "expenses") {
-    const sheet = ss.getSheetByName("المصروفات");
-    if (sheet) sheetId = "&gid=" + sheet.getSheetId();
-  } else {
-    const sheet = ss.getSheetByName("التبرعات");
-    if (sheet) sheetId = "&gid=" + sheet.getSheetId();
+    sheetName = "المصروفات";
+  } else if (type === "prevMonths") {
+    sheetName = "أرشيف_التبرعات";
   }
+  
+  const sheet = ss.getSheetByName(sheetName) || ss.getSheetByName("التبرعات");
+  let sheetId = sheet ? "&gid=" + sheet.getSheetId() : "";
   
   return ss.getUrl().replace(/edit$/, '') + 'export?exportFormat=pdf&format=pdf' +
     '&size=letter&portrait=true&fitw=true&gridlines=true&printtitle=false&sheetnames=false&fzr=false' + sheetId;
