@@ -3,7 +3,7 @@
   "name": "تطبيق مسجد الفكي علي الشيخ حماد",
   "icons": [
     {
-      "src": "icons.png",
+      "src": "icons-192.png",
       "type": "image/png",
       "sizes": "192x192"
     },
