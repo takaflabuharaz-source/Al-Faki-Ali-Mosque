@@ -720,60 +720,62 @@
       }
     }
 
-   function downloadPDF(type) {
-      let containerId = 'donationsTableContainer';
-      let titleText = 'كشف التبرعات العام';
+  function downloadPDF(type) {
+  let containerId = 'donationsTableContainer';
+  let titleText = 'كشف التبرعات العام';
 
-      if (type === 'paid') {
-        containerId = 'paidTableContainer';
-        titleText = 'قائمة المتبرعين هذا الشهر';
-      } else if (type === 'unpaid') {
-        containerId = 'unpaidTableContainer';
-        titleText = 'قائمة الانتظار (لم يدفعوا بعد)';
-      } else if (type === 'expenses') {
-        containerId = 'expensesTableContainer';
-        titleText = 'سجل المصاريف العامة';
-      } else if (type === 'prevMonths') {
-        containerId = 'historyTableContainer';
-        titleText = 'أرشيف التبرعات للشهور السابقة';
-      }
+  if (type === 'paid') {
+    containerId = 'paidTableContainer';
+    titleText = 'قائمة المتبرعين هذا الشهر';
+  } else if (type === 'unpaid') {
+    containerId = 'unpaidTableContainer';
+    titleText = 'قائمة الانتظار (لم يدفعوا بعد)';
+  } else if (type === 'expenses') {
+    containerId = 'expensesTableContainer';
+    titleText = 'سجل المصاريف العامة';
+  } else if (type === 'prevMonths') {
+    containerId = 'historyTableContainer';
+    titleText = 'أرشيف التبرعات للشهور السابقة';
+  }
 
-      const sourceElement = document.getElementById(containerId);
-      if (!sourceElement || sourceElement.innerHTML.trim() === "") {
-        alert("عذراً، لا توجد بيانات في هذا الجدول حالياً. يرجى عرض القائمة أولاً.");
-        return;
-      }
+  const sourceElement = document.getElementById(containerId);
+  if (!sourceElement || sourceElement.innerHTML.trim() === "") {
+    alert("عذراً، لا توجد بيانات في هذا الجدول حالياً. يرجى عرض القائمة أولاً.");
+    return;
+  }
 
-      // فتح نافذة الطباعة الذكية للمتصفح والتي تتيح خيار (حفظ كـ PDF - Save as PDF)
-      const printWindow = window.open('', '_blank');
-      printWindow.document.write(`
-        <html dir="rtl" lang="ar">
-        <head>
-          <title>${titleText}</title>
-          <style>
-            body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 20px; direction: rtl; color: #000; }
-            h2, h3 { text-align: center; color: #1e5631; margin: 5px 0; }
-            p { text-align: center; color: #555; font-size: 13px; margin-bottom: 20px; }
-            table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-            th, td { border: 1px solid #333; padding: 8px; text-align: center; font-size: 13px; }
-            th { background-color: #1e5631 !important; color: white !important; -webkit-print-color-adjust: exact; }
-            .badge-paid { color: #27ae60; font-weight: bold; }
-            .badge-wait { color: #d35400; font-weight: bold; }
-          </style>
-        </head>
-        <body>
-          <h2>أسرة الفكي علي الشيخ حماد</h2>
-          <p>قال تعالي: ﴿وَتَعَاوَنُوا عَلَى الْبِرِّ وَالتَّقْوَىٰ ۖ وَلَا تَعَاوَنُوا عَلَى الْإِثْمِ وَالْعُدْوَانِ﴾</p>
-          <h3>${titleText}</h3>
-          ${sourceElement.innerHTML}
-          <script>
-            window.onload = function() {
-              window.print();
-              setTimeout(() => { window.close(); }, 500);
-            };
-      `();
-      printWindow.document.close();
-    }
+  const printWindow = window.open('', '_blank');
+  printWindow.document.write(`
+    <html dir="rtl" lang="ar">
+    <head>
+      <title>${titleText}</title>
+      <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 20px; direction: rtl; color: #000; }
+        h2, h3 { text-align: center; color: #1e5631; margin: 5px 0; }
+        p { text-align: center; color: #555; font-size: 13px; margin-bottom: 20px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { border: 1px solid #333; padding: 8px; text-align: center; font-size: 13px; }
+        th { background-color: #1e5631 !important; color: white !important; -webkit-print-color-adjust: exact; }
+        .badge-paid { color: #27ae60; font-weight: bold; }
+        .badge-wait { color: #d35400; font-weight: bold; }
+      </style>
+    </head>
+    <body>
+      <h2>أسرة الفكي علي الشيخ حماد</h2>
+      <p>قال تعالي: ﴿وَتَعَاوَنُوا عَلَى الْبِرِّ وَالتَّقْوَىٰ ۖ وَلَا تَعَاوَنُوا عَلَى الْإِثْمِ وَالْعُدْوَانِ﴾</p>
+      <h3>${titleText}</h3>
+      ${sourceElement.innerHTML}
+      <script>
+        window.onload = function() {
+          window.print();
+          setTimeout(() => { window.close(); }, 500);
+        };
+      <\/script>
+    </body>
+    </html>
+  `);
+  printWindow.document.close();
+}
     
     async function addExpense() {
       const title = document.getElementById('expTitle').value.trim();
