@@ -720,55 +720,85 @@
       }
     }
 
-   function downloadPDF(type) {
-      let elementId = 'donationsTableContainer';
-      let fileName = 'كشف_التبرعات_العام.pdf';
+   async function downloadPDF(type) {
+      let containerId = 'donationsTableContainer';
+      let titleText = 'كشف التبرعات العام';
 
       if (type === 'paid') {
-        elementId = 'paidTableContainer';
-        fileName = 'قائمة_المتبرعين.pdf';
+        containerId = 'paidTableContainer';
+        titleText = 'قائمة المتبرعين هذا الشهر';
       } else if (type === 'unpaid') {
-        elementId = 'unpaidTableContainer';
-        fileName = 'قائمة_الانتظار.pdf';
+        containerId = 'unpaidTableContainer';
+        titleText = 'قائمة الانتظار (لم يدفعوا بعد)';
       } else if (type === 'expenses') {
-        elementId = 'expensesTableContainer';
-        fileName = 'سجل_المصاريف.pdf';
+        containerId = 'expensesTableContainer';
+        titleText = 'سجل المصاريف العامة';
       } else if (type === 'prevMonths') {
-        elementId = 'historyTableContainer';
-        fileName = 'أرشيف_الشهور_السابقة.pdf';
+        containerId = 'historyTableContainer';
+        titleText = 'أرشيف التبرعات للشهور السابقة';
       }
 
-      const targetElement = document.getElementById(elementId);
-      if (!targetElement || targetElement.innerHTML.trim() === "") {
-        alert("لا توجد بيانات لتنزيلها حالياً!");
+      const sourceElement = document.getElementById(containerId);
+      if (!sourceElement || sourceElement.innerHTML.trim() === "") {
+        alert("عذراً، لا توجد بيانات في هذا الجدول لتنزيلها حالياً. يرجى عرض القائمة أولاً.");
         return;
       }
 
-      // إضافة عنوان ترويسة احترافي مخصص لملف الـ PDF المطابق لشاشة الطباعة
-      const wrapper = document.createElement('div');
-      wrapper.style.direction = 'rtl';
-      wrapper.style.padding = '20px';
-      wrapper.style.fontFamily = 'Segoe UI, Tahoma, Geneva, Verdana, sans-serif';
-      
-      const headerTitle = document.createElement('h3');
-      headerTitle.style.textAlign = 'center';
-      headerTitle.style.color = '#1e5631';
-      headerTitle.innerText = 'أسرة الفكي علي الشيخ حماد - ' + fileName.replace('.pdf', '').replace(/_/g, ' ');
-      
-      wrapper.appendChild(headerTitle);
-      wrapper.appendChild(targetElement.cloneNode(true));
+      // إنشاء حاوية مؤقتة للطباعة والـ PDF لتجنب أي صفحات فارغة
+      const exportContainer = document.createElement('div');
+      exportContainer.style.direction = 'rtl';
+      exportContainer.style.padding = '15px';
+      exportContainer.style.backgroundColor = '#ffffff';
+      exportContainer.style.fontFamily = 'Segoe UI, Tahoma, Geneva, Verdana, sans-serif';
+
+      // إضافة الترويسة والعنوان المطابق لشاشة الطباعة
+      exportContainer.innerHTML = `
+        <div style="text-align: center; margin-bottom: 15px;">
+          <h2 style="color: #1e5631; margin: 0 0 5px 0;">أسرة الفكي علي الشيخ حماد</h2>
+          <p style="color: #555; font-size: 13px; margin: 0 0 10px 0;">قال تعالي: ﴿وَتَعَاوَنُوا عَلَى الْبِرِّ وَالتَّقْوَىٰ ۖ وَلَا تَعَاوَنُوا عَلَى الْإِثْمِ وَالْعُدْوَانِ﴾</p>
+          <h3 style="color: #2c3e50; border-bottom: 2px solid #1e5631; padding-bottom: 8px; margin-top: 10px;">${titleText}</h3>
+        </div>
+      `;
+
+      // نسخ جدول البيانات الحالي بكل محتوياته وتنسيقاته
+      const tableClone = sourceElement.querySelector('table');
+      if (tableClone) {
+        const clonedTable = tableClone.cloneNode(true);
+        // ضمان ظهور أطر الجدول بوضوح في الـ PDF
+        clonedTable.style.width = '100%';
+        clonedTable.style.borderCollapse = 'collapse';
+        clonedTable.querySelectorAll('th, td').forEach(cell => {
+          cell.style.border = '1px solid #999';
+          cell.style.padding = '8px';
+          cell.style.textAlign = 'center';
+          cell.style.fontSize = '12px';
+        });
+        clonedTable.querySelectorAll('th').forEach(th => {
+          th.style.backgroundColor = '#1e5631';
+          th.style.color = '#ffffff';
+        });
+        exportContainer.appendChild(clonedTable);
+      } else {
+        exportContainer.innerHTML += sourceElement.innerHTML;
+      }
 
       const opt = {
         margin:       10,
-        filename:     fileName,
+        filename:     type + '_report.pdf',
         image:        { type: 'jpeg', quality: 0.98 },
-        html2canvas:  { scale: 2, useCORS: true },
+        html2canvas:  { scale: 2, useCORS: true, logging: false },
         jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
       };
 
-      alert("جاري إنشاء وتنزيل ملف الـ PDF بتنسيق الجدول المنظم...");
-      html2pdf().from(wrapper).set(opt).save();
+      alert("جاري تجهيز وتصدير ملف الـ PDF بالجدول والترويسة...");
+      
+      // تنفيذ عملية التوليد عبر مكتبة html2pdf
+      html2pdf().from(exportContainer).set(opt).save().catch(err => {
+        console.error(err);
+        alert("حدث خطأ أثناء تصدير ملف الـ PDF.");
+      });
     }
+    
     async function addExpense() {
       const title = document.getElementById('expTitle').value.trim();
       const amount = document.getElementById('expAmount').value.trim();
