@@ -177,29 +177,37 @@ function processForm(data) {
     };
   }
 
-  // 4. رفع الإشعار والمبلغ
+ // 4. رفع الإشعار والمبلغ
   if (action === "addDonation") {
-    if (!data.receiptData) {
-      return { status: "error", message: "إرفاق إشعار التبرع إجباري!" };
-    }
-
     let receiptUrl = "";
-    if (data.receiptData) {
-      const folder = DriveApp.getRootFolder();
-      const blob = Utilities.newBlob(Utilities.base64Decode(data.receiptData.split(',')[1]), "image/png", "receipt_" + data.phone + ".png");
-      const file = folder.createFile(blob);
-      file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
-      receiptUrl = file.getUrl();
+    
+    // معالجة صورة الإشعار إن وجدت بشكل آمن
+    if (data.receiptData && data.receiptData.indexOf("data:image") !== -1) {
+      try {
+        const folder = DriveApp.getRootFolder();
+        const base64Parts = data.receiptData.split(',');
+        const mimeMatch = base64Parts[0].match(/:(.*?);/);
+        const mimeType = mimeMatch ? mimeMatch[1] : "image/png";
+        const bytes = Utilities.base64Decode(base64Parts[1]);
+        const blob = Utilities.newBlob(bytes, mimeType, "receipt_" + (data.phone || "user") + "_" + new Date().getTime());
+        
+        const file = folder.createFile(blob);
+        file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+        receiptUrl = file.getUrl();
+      } catch (err) {
+        // في حال حدوث خطأ أثناء فك تشفير الصورة، نضع ملاحظة دون إيقاف تسجيل التبرع
+        receiptUrl = "خطأ في رفع الملف";
+      }
     }
 
-    const cleanPhone = data.phone.toString().replace(/^0+/, '').trim();
+    const cleanPhone = data.phone ? data.phone.toString().replace(/^0+/, '').trim() : "";
     const donationsData = donationsSheet.getDataRange().getValues();
     let updated = false;
 
     for (let i = 1; i < donationsData.length; i++) {
-      if (donationsData[i][1].toString().trim() === cleanPhone) {
+      if (cleanPhone && donationsData[i][1].toString().trim() === cleanPhone) {
         donationsSheet.getRange(i + 1, 3).setValue(data.month || currentMonth);
-        donationsSheet.getRange(i + 1, 4).setValue(data.amount || 10000);
+        donationsSheet.getRange(i + 1, 4).setValue(Number(data.amount) || 10000);
         if (receiptUrl) donationsSheet.getRange(i + 1, 5).setValue(receiptUrl);
         donationsSheet.getRange(i + 1, 6).setValue("تم الدفع");
         donationsSheet.getRange(i + 1, 7).setValue(new Date());
@@ -210,10 +218,10 @@ function processForm(data) {
 
     if (!updated) {
       donationsSheet.appendRow([
-        data.userName, 
+        data.userName || "متبرع", 
         cleanPhone, 
         data.month || currentMonth, 
-        data.amount || 10000, 
+        Number(data.amount) || 10000, 
         receiptUrl, 
         "تم الدفع", 
         new Date()
